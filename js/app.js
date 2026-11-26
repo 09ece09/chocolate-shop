@@ -146,7 +146,12 @@
       '<button type="submit" class="btn full" id="send-order">Send Order On WhatsApp</button></form></div>';
     document.body.classList.add("lock");
     renderSummary();
-    document.getElementById("cust-name").focus();
+    if (MH.hasPendingOrder()) {
+      var sheet = root.querySelector(".sheet");
+      if (sheet) sheet.scrollTop = 0;
+    } else {
+      document.getElementById("cust-name").focus();
+    }
   }
 
   function closeOrder() {
@@ -190,6 +195,21 @@
     };
   }
 
+  function syncPendingOrderPrompt() {
+    if (!MH.hasPendingOrder()) return;
+    if (MH.totals().qty <= 0) {
+      MH.setPendingOrder(false);
+      return;
+    }
+    if (!orderOpen) {
+      openOrder();
+    } else if (!document.querySelector("#order-summary .order-confirm")) {
+      renderSummary();
+      var sheet = document.querySelector("#order-modal .sheet");
+      if (sheet) sheet.scrollTop = 0;
+    }
+  }
+
   function sendOrder(event) {
     event.preventDefault();
     var error = document.getElementById("order-error");
@@ -212,11 +232,8 @@
     error.textContent = "";
     orderJustCompleted = false;
     MH.setPendingOrder(true);
-    renderSummary();
-    var popup = window.open(url, "_blank", "noopener");
-    if (!popup) {
-      window.location.href = url;
-    }
+    setTimeout(syncPendingOrderPrompt, 400);
+    window.location.href = url;
   }
 
   function onClick(event) {
@@ -280,16 +297,13 @@
     }, true);
     refreshAll();
     MH.loadRemoteData(false);
-    if (MH.hasPendingOrder() && MH.totals().qty > 0) {
-      openOrder();
-    }
+    syncPendingOrderPrompt();
   });
 
-  window.addEventListener("pageshow", function () {
-    if (MH.hasPendingOrder() && MH.totals().qty > 0) {
-      if (!orderOpen) openOrder();
-      else renderSummary();
-    }
+  window.addEventListener("pageshow", syncPendingOrderPrompt);
+  window.addEventListener("focus", syncPendingOrderPrompt);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") syncPendingOrderPrompt();
   });
 
   window.MHStorefront = {

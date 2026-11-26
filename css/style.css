@@ -1046,6 +1046,10 @@ a { color: inherit; }
   gap: 8px;
 }
 
+.order-confirm-actions .btn {
+  flex: 1 1 160px;
+}
+
 .btn.secondary {
   background: rgba(255, 255, 255, 0.85);
   color: var(--choc);
