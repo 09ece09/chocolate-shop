@@ -1018,3 +1018,40 @@ a { color: inherit; }
   font-size: 0.9rem;
   color: var(--choc-soft);
 }
+
+.order-confirm {
+  margin: 0 0 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(201, 162, 39, 0.16);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+}
+
+.order-confirm-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: var(--choc);
+}
+
+.order-confirm-text {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--choc-soft);
+  line-height: 1.45;
+}
+
+.order-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn.secondary {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--choc);
+  border: 1px solid var(--line);
+}
+
+.order-done {
+  margin-bottom: 12px;
+}

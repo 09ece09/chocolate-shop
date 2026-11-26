@@ -5,7 +5,8 @@
     cart: "mhcs_cart",
     settings: "mhcs_settings",
     customer: "mhcs_customer",
-    dirty: "mhcs_dirty"
+    dirty: "mhcs_dirty",
+    pendingOrder: "mhcs_pending_order"
   };
 
   var SEED = [
@@ -87,6 +88,21 @@
     try {
       if (flag) localStorage.setItem(KEYS.dirty, "1");
       else localStorage.removeItem(KEYS.dirty);
+    } catch (err) { /* ignore */ }
+  }
+
+  function hasPendingOrder() {
+    try {
+      return localStorage.getItem(KEYS.pendingOrder) === "1";
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function setPendingOrder(flag) {
+    try {
+      if (flag) localStorage.setItem(KEYS.pendingOrder, "1");
+      else localStorage.removeItem(KEYS.pendingOrder);
     } catch (err) { /* ignore */ }
   }
 
@@ -373,6 +389,7 @@
   function clearCart() {
     state.cart = {};
     saveCart(state.cart);
+    setPendingOrder(false);
   }
 
   function money(amount) {
@@ -443,6 +460,8 @@
     dataSource: dataSource,
     isDirty: isDirty,
     setDirty: setDirty,
+    hasPendingOrder: hasPendingOrder,
+    setPendingOrder: setPendingOrder,
     onChange: onChange,
     customer: customer,
     saveCustomer: saveCustomer,

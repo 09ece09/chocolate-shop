@@ -3,6 +3,7 @@
   var query = "";
   var category = "All";
   var orderOpen = false;
+  var orderJustCompleted = false;
 
   function stockClass(stock) {
     if (stock <= 0) return "stock out";
@@ -98,17 +99,31 @@
     if (!box) return;
     var info = MH.totals();
     if (!info.qty) {
-      box.innerHTML = '<p class="empty">Your cart is empty. Add a chocolate to start an order.</p>';
+      if (orderJustCompleted) {
+        var shop = MH.settings().shopName || "M.H Chocolate Shop";
+        box.innerHTML = '<div class="note order-done" role="status"><strong>Order sent!</strong> Your cart is now empty. Thank you for ordering from ' + MH.esc(shop) + '.</div>';
+      } else {
+        box.innerHTML = '<p class="empty">Your cart is empty. Add a chocolate to start an order.</p>';
+      }
       var send = document.getElementById("send-order");
       if (send) send.disabled = true;
       return;
     }
+    var pendingHtml = MH.hasPendingOrder()
+      ? '<div class="order-confirm" role="region" aria-label="Confirm WhatsApp order">' +
+        '<p class="order-confirm-title">Did you send this order on WhatsApp?</p>' +
+        '<p class="order-confirm-text">Confirm if you completed the order to empty your cart, or keep these items if you did not send it.</p>' +
+        '<div class="order-confirm-actions">' +
+        '<button type="button" class="btn" data-act="confirm-sent">Yes, Order Sent</button>' +
+        '<button type="button" class="btn secondary" data-act="keep-cart">No, Keep in Cart</button>' +
+        '</div></div>'
+      : "";
     var rows = info.items.map(function (item) {
       return '<div class="line"><div><b>' + MH.esc(item.name) + '</b><div class="stock">' + MH.esc(MH.money(item.price)) + ' each</div></div>' +
         '<div class="line-actions"><div class="stepper"><button type="button" data-act="dec" data-id="' + MH.esc(item.id) + '" aria-label="Decrease quantity">−</button><b>' + item.qty + '</b><button type="button" data-act="inc" data-id="' + MH.esc(item.id) + '" aria-label="Increase quantity"' + (item.qty >= item.stock ? " disabled" : "") + '>+</button></div>' +
         '<b>' + MH.esc(MH.money(item.qty * item.price)) + '</b><button type="button" class="linkish" data-act="remove" data-id="' + MH.esc(item.id) + '">Remove</button></div></div>';
     }).join("");
-    box.innerHTML = rows +
+    box.innerHTML = pendingHtml + rows +
       '<div class="totals"><span>Total quantity</span><span>' + info.qty + "</span></div>" +
       '<div class="totals grand"><span>Total amount</span><span>' + MH.esc(MH.money(info.amount)) + "</span></div>";
     var send = document.getElementById("send-order");
@@ -136,6 +151,7 @@
 
   function closeOrder() {
     orderOpen = false;
+    orderJustCompleted = false;
     var root = document.getElementById("modal-root");
     root.hidden = true;
     root.innerHTML = "";
@@ -150,6 +166,8 @@
   }
 
   function changeQty(act, id) {
+    orderJustCompleted = false;
+    MH.setPendingOrder(false);
     var before = MH.totals().qty;
     if (act === "add" || act === "inc") {
       var added = MH.add(id);
@@ -192,7 +210,13 @@
       return;
     }
     error.textContent = "";
-    window.location.href = url;
+    orderJustCompleted = false;
+    MH.setPendingOrder(true);
+    renderSummary();
+    var popup = window.open(url, "_blank", "noopener");
+    if (!popup) {
+      window.location.href = url;
+    }
   }
 
   function onClick(event) {
@@ -208,7 +232,14 @@
     }
     var act = button.dataset.act;
     if (act === "close") closeOrder();
-    else if (button.dataset.id) changeQty(act, button.dataset.id);
+    else if (act === "confirm-sent") {
+      MH.clearCart();
+      orderJustCompleted = true;
+      refreshAll();
+    } else if (act === "keep-cart") {
+      MH.setPendingOrder(false);
+      refreshAll();
+    } else if (button.dataset.id) changeQty(act, button.dataset.id);
   }
 
   function refreshAll() {
@@ -249,6 +280,16 @@
     }, true);
     refreshAll();
     MH.loadRemoteData(false);
+    if (MH.hasPendingOrder() && MH.totals().qty > 0) {
+      openOrder();
+    }
+  });
+
+  window.addEventListener("pageshow", function () {
+    if (MH.hasPendingOrder() && MH.totals().qty > 0) {
+      if (!orderOpen) openOrder();
+      else renderSummary();
+    }
   });
 
   window.MHStorefront = {

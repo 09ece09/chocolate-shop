@@ -1,8 +1,5 @@
-/* Inline runtime Admin mode for index.html backed by Data.json (local server or GitHub). */
+/* Inline runtime Admin mode for index.html backed by GitHub Data.json. */
 (function () {
-  var ADMIN_USER = "admin";
-  var ADMIN_PASSWORD = "admin123";
-  var AUTH_KEY = "mhcs_admin";
   var GH_TOKEN_KEY = "mh_gh_token";
   var GH_REPO_KEY = "mh_gh_repo";
   var GH_FILE_KEY = "mh_gh_file";
@@ -14,16 +11,12 @@
   var statusMessage = "";
   var statusIsError = false;
 
-  function isLocalAuthed() {
-    return sessionStorage.getItem(AUTH_KEY) === "yes";
-  }
-
   function hasGitHubAuth() {
     return Boolean(localStorage.getItem(GH_TOKEN_KEY) && localStorage.getItem(GH_REPO_KEY));
   }
 
   function isActive() {
-    return isLocalAuthed() || hasGitHubAuth();
+    return hasGitHubAuth();
   }
 
   function guessRepo() {
@@ -206,30 +199,20 @@
       '<div class="modal" id="admin-modal">' +
       '  <div class="sheet admin-sheet">' +
       '    <button type="button" class="close" data-admin-close aria-label="Close">×</button>' +
-      '    <p class="eyebrow">Runtime Editor</p>' +
-      '    <h2>Enter Admin Mode</h2>' +
-      '    <p class="sheet-lead">Edit products, prices, stock, and shop details live on this page and save to Data.json.</p>' +
-      '    <div class="admin-tabs" role="tablist">' +
-      '      <button type="button" class="chip" data-login-tab="local" aria-pressed="true">Shopkeeper Login</button>' +
-      '      <button type="button" class="chip" data-login-tab="github" aria-pressed="false">GitHub Data.json Sync</button>' +
-      '    </div>' +
-      '    <form id="rt-login-local">' +
-      '      <label class="field"><span>Username</span><input id="rt-user" autocomplete="username" value="admin" required></label>' +
-      '      <label class="field"><span>Password</span><input id="rt-pass" type="password" autocomplete="current-password" placeholder="admin123" required></label>' +
-      '      <p class="form-error" id="rt-login-err" role="alert"></p>' +
-      '      <button type="submit" class="btn full">Unlock Admin Mode</button>' +
-      '    </form>' +
-      '    <form id="rt-login-gh" hidden>' +
-      '      <label class="field"><span>GitHub Token</span><input id="rt-gh-token" type="password" autocomplete="off" placeholder="ghp_..." required></label>' +
-      '      <label class="field"><span>Repository (owner/name)</span><input id="rt-gh-repo" placeholder="username/chocolate-shop-develop" value="' + MH.esc(savedRepo) + '" required></label>' +
-      '      <p class="note">Reads and writes Data.json directly in your GitHub repository. Saved only in this browser.</p>' +
+      '    <p class="eyebrow">Admin Access · GitHub Sync</p>' +
+      '    <h2>Login with GitHub Token</h2>' +
+      '    <p class="sheet-lead">Sign in with your GitHub Personal Access Token to edit products, prices, stock, and shop details live and save to Data.json.</p>' +
+      '    <form id="rt-login-gh">' +
+      '      <label class="field"><span>GitHub Personal Access Token</span><input id="rt-gh-token" type="password" autocomplete="off" placeholder="ghp_... or github_pat_..." required></label>' +
+      '      <label class="field"><span>Repository (owner/name)</span><input id="rt-gh-repo" placeholder="username/chocolate-shop" value="' + MH.esc(savedRepo) + '" required></label>' +
+      '      <p class="note">Use a token with repository Contents read/write permission. Your token stays in this browser and syncs directly with Data.json.</p>' +
       '      <p class="form-error" id="rt-gh-err" role="alert"></p>' +
-      '      <button type="submit" class="btn full">Connect GitHub &amp; Open Admin</button>' +
+      '      <button type="submit" class="btn full">Sign In with GitHub Token</button>' +
       '    </form>' +
       '  </div>' +
       '</div>';
 
-    document.getElementById("rt-pass").focus();
+    document.getElementById("rt-gh-token").focus();
   }
 
   function resizeImage(file) {
@@ -462,17 +445,6 @@
       return;
     }
 
-    var tabBtn = event.target.closest("[data-login-tab]");
-    if (tabBtn) {
-      var mode = tabBtn.dataset.loginTab;
-      document.querySelectorAll("[data-login-tab]").forEach(function (btn) {
-        btn.setAttribute("aria-pressed", btn.dataset.loginTab === mode ? "true" : "false");
-      });
-      document.getElementById("rt-login-local").hidden = mode !== "local";
-      document.getElementById("rt-login-gh").hidden = mode !== "github";
-      return;
-    }
-
     var cardActBtn = event.target.closest("[data-admin-act]");
     if (cardActBtn) {
       var act = cardActBtn.dataset.adminAct;
@@ -529,31 +501,11 @@
     }
 
     if (event.target.id === "rt-gh-disconnect") {
-      localStorage.removeItem(GH_TOKEN_KEY);
-      localStorage.removeItem(GH_REPO_KEY);
-      localStorage.removeItem(GH_FILE_KEY);
-      setStatus("GitHub disconnected", false);
-      refreshUI();
-      if (activeModal === "manager") openManagerModal();
+      exitAdmin();
     }
   }
 
   function handleRootSubmit(event) {
-    if (event.target.id === "rt-login-local") {
-      event.preventDefault();
-      var u = document.getElementById("rt-user").value.trim();
-      var p = document.getElementById("rt-pass").value;
-      var err = document.getElementById("rt-login-err");
-      if (u === ADMIN_USER && p === ADMIN_PASSWORD) {
-        sessionStorage.setItem(AUTH_KEY, "yes");
-        closeModal();
-        refreshUI();
-        return;
-      }
-      err.textContent = "Invalid username or password.";
-      return;
-    }
-
     if (event.target.id === "rt-login-gh") {
       event.preventDefault();
       var token = document.getElementById("rt-gh-token").value.trim();
@@ -655,7 +607,6 @@
   }
 
   function exitAdmin() {
-    sessionStorage.removeItem(AUTH_KEY);
     localStorage.removeItem(GH_TOKEN_KEY);
     localStorage.removeItem(GH_REPO_KEY);
     localStorage.removeItem(GH_FILE_KEY);
