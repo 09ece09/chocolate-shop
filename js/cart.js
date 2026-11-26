@@ -392,6 +392,23 @@
     setPendingOrder(false);
   }
 
+  function completeOrder() {
+    var ordered = clone(state.cart || {});
+    var hasOrdered = Object.keys(ordered).length > 0;
+    clearCart();
+    if (!hasOrdered) return;
+    var nextProducts = state.products.map(function (product) {
+      var qty = Math.floor(Number(ordered[product.id]) || 0);
+      if (qty <= 0) return product;
+      var currentStock = Math.max(0, Math.floor(Number(product.stock) || 0));
+      return Object.assign({}, product, {
+        stock: Math.max(0, currentStock - qty)
+      });
+    });
+    saveProducts(nextProducts, { dirty: true });
+    saveToLocalServer();
+  }
+
   function money(amount) {
     var currency = (state.settings && state.settings.currency) || "₹";
     var value = Number(amount) || 0;
@@ -471,6 +488,7 @@
     setQty: setQty,
     remove: remove,
     clearCart: clearCart,
+    completeOrder: completeOrder,
     money: money,
     esc: esc,
     safeSrc: safeSrc,

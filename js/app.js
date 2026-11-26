@@ -250,8 +250,8 @@
     var act = button.dataset.act;
     if (act === "close") closeOrder();
     else if (act === "confirm-sent") {
-      MH.clearCart();
       orderJustCompleted = true;
+      MH.completeOrder();
       refreshAll();
     } else if (act === "keep-cart") {
       MH.setPendingOrder(false);
