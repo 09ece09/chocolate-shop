@@ -65,10 +65,10 @@
     },
     {
       "id": "p7",
-      "name": "Tik Tik ( Minto White )",
+      "name": "Tik Tik",
       "price": 150,
       "stock": 5,
-      "category": "Candy",
+      "category": "Minto White",
       "icon": "🍬",
       "image": "assets/images/p7.jpg",
       "description": "Crunchy bite-size chocolates, 100 pieces."
