@@ -45,9 +45,9 @@
     },
     {
       "id": "p5",
-      "name": "Tulse Jelly (smoll)",
+      "name": "Tulse Jelly ( smoll )",
       "price": 45,
-      "stock": 3,
+      "stock": 5,
       "category": "Jelly",
       "icon": "🍬",
       "image": "assets/images/p5.jpg",
