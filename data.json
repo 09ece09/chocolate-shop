@@ -55,9 +55,9 @@
     },
     {
       "id": "p6",
-      "name": "Mint Fresh (100 pcs)",
+      "name": "Mint Fresh",
       "price": 120,
-      "stock": 3,
+      "stock": 5,
       "category": "Candy",
       "icon": "🌿",
       "image": "assets/images/p6.jpg",
