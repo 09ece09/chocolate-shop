@@ -1,229 +1,105 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>M.H Chocolate Shop</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#faf5f0;--surface:#fff;--text:#2b1810;--muted:#7a6558;--line:#eadfd5;--brand:#5a2e1a;--brand-text:#fff;--tint:#f3e6da}
-@media (prefers-color-scheme:dark){:root{--bg:#1a110c;--surface:#26180f;--text:#f3e8df;--muted:#b9a393;--line:#3b281b;--brand:#d9a066;--brand-text:#2b1810;--tint:#3a2619}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;font-size:16px;line-height:1.5;padding-bottom:90px}
-header{padding:24px 16px 8px;max-width:960px;margin:auto}
-h1{margin:0;font-size:28px}
-header p{margin:2px 0 0;color:var(--muted)}
-.grid{max-width:960px;margin:auto;padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px}
-.pic{font-size:52px;text-align:center;background:var(--tint);border-radius:10px;padding:14px 0;line-height:1}
-.pic.has{padding:0;background:none}
-.pic img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}
-.name{font-weight:700;margin-top:6px}
-.price{color:var(--muted)}
-.stock{font-size:13px;color:var(--muted)}
-.stock.low{color:#c26a00}
-.stock.out{color:#c0392b;font-weight:700}
-button{font:inherit;cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
-.add{margin-top:auto;border:1.5px solid var(--brand);background:transparent;color:var(--brand);border-radius:10px;padding:8px;font-weight:700}
-.qty{margin-top:auto;display:flex;align-items:center;justify-content:space-between;background:var(--brand);color:var(--brand-text);border-radius:10px;padding:2px}
-.qty button{background:transparent;border:0;color:inherit;font-size:22px;width:42px;height:38px}
-.add:disabled,.qty button:disabled{opacity:.4;cursor:default}
-.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line)}
-.bar button{width:100%;max-width:928px;display:block;margin:auto;background:var(--brand);color:var(--brand-text);border:0;border-radius:12px;padding:13px;font-weight:700;font-size:17px}
-.bar button:disabled{opacity:.45;cursor:default}
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:5}
-.sheet.open{display:flex}
-.panel{background:var(--surface);width:100%;max-width:560px;max-height:92%;overflow-y:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
-.panel h2{margin:0 0 8px;font-size:21px}
-.row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
-.sum{font-weight:700;border:0;padding:8px 0 0}
-.sum.big{font-size:18px}
-label{display:block;margin-top:12px;font-weight:700}
-input,textarea{width:100%;font:inherit;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--text)}
-.actions{display:flex;gap:10px;margin-top:16px}
-.actions button{flex:1;padding:12px;border-radius:10px;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--text)}
-.actions .send{flex:2;background:var(--brand);color:var(--brand-text);border-color:var(--brand)}
-.err{color:#c0392b;margin:8px 0 0;min-height:1.2em}
-.hint{color:var(--muted);font-size:14px;margin:4px 0 0}
-.hint a{color:var(--brand);font-weight:700}
-.adminlink{display:block;margin:6px auto 0;background:none;border:0;color:var(--muted);font-size:14px;text-decoration:underline}
-.arow{display:grid;grid-template-columns:48px 1fr 62px 58px 38px;gap:6px;align-items:center;margin-top:8px}
-.arow input{margin:0;padding:8px}
-.arow .del{border:1px solid var(--line);background:transparent;color:#c0392b;border-radius:8px;height:38px;font-size:18px}
-.aphoto{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:14px}
-.aphoto img{width:40px;height:40px;object-fit:cover;border-radius:8px}
-.aphoto button{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:8px;padding:6px 10px}
-.addrow{margin-top:10px;width:100%;padding:10px;border-radius:10px;border:1.5px dashed var(--brand);background:transparent;color:var(--brand);font-weight:700}
-</style></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>M.H Chocolate Shop</title>
+  <meta name="description" content="M.H Chocolate Shop — browse jars, jellies and sweets, then send your order on WhatsApp.">
+  <meta name="theme-color" content="#97624D">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%232D1B14'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-size='22' fill='%23C9A227' font-family='Georgia'%3EMH%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
 <body>
-<header><h1 id="shopName"></h1><p>Pick your chocolates, then send the whole order on WhatsApp.</p></header>
-<main class="grid" id="grid"></main>
-<button class="adminlink" id="adminBtn">Admin</button>
-<div class="bar"><button id="open" disabled>Select products</button></div>
+  <a class="skip" href="#catalog">Skip to products</a>
+  <header class="site-header">
+    <a class="brand" href="#top">
+      <span class="mark" aria-hidden="true">MH</span>
+      <span>
+        <span class="brand-name" data-shop>M.H Chocolate Shop</span>
+        <span class="brand-tag">Chocolate house</span>
+      </span>
+    </a>
+    <form class="search" id="search-form" role="search">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="Search chocolates" aria-label="Search products">
+    </form>
+    <div class="header-actions">
+      <button class="btn ghost" id="view-order" type="button">View Order</button>
+      <button class="icon-btn" id="bag-btn" type="button" aria-label="Open cart">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8h11l-1 12h-9l-1-12z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 8V7a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        <span class="badge" id="cart-count" hidden>0</span>
+      </button>
+    </div>
+  </header>
 
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Your order"><div class="panel">
-  <h2>Your order</h2>
-  <div id="lines"></div>
-  <label for="cname">Your name</label><input id="cname" autocomplete="name">
-  <label for="cphone">Phone number</label><input id="cphone" inputmode="tel" autocomplete="tel">
-  <label for="caddr">Delivery address</label><textarea id="caddr" rows="2" autocomplete="street-address"></textarea>
-  <p class="err" id="err"></p><p class="hint" id="wa"></p>
-  <div class="actions"><button id="back">Go back</button><button class="send" id="send">Send order on WhatsApp</button></div>
-</div></div>
-
-<div class="sheet" id="asheet" role="dialog" aria-modal="true" aria-label="Admin"><div class="panel">
-  <h2>Admin</h2>
-  <div id="alogin">
-    <p class="hint">Enter your GitHub token to edit the shop. It is saved only on this device.</p>
-    <label for="atoken">GitHub token</label><input id="atoken" type="password" autocomplete="off">
-    <label for="arepo">Repository (owner/name)</label><input id="arepo" placeholder="username/chocolate-shop">
-    <p class="err" id="lerr"></p>
-    <div class="actions"><button id="lcancel">Cancel</button><button class="send" id="lgo">Continue</button></div>
+  <div class="admin-bar" id="admin-bar" hidden>
+    <div class="admin-bar-inner">
+      <div class="admin-bar-status">
+        <span class="admin-dot" aria-hidden="true"></span>
+        <strong id="admin-mode-label">Admin Mode</strong>
+        <span class="admin-sync-note" id="admin-sync-note">Ready</span>
+      </div>
+      <div class="admin-bar-actions">
+        <button type="button" class="btn admin-sm" id="admin-add-btn">+ Add product</button>
+        <button type="button" class="btn ghost admin-sm" id="admin-manage-btn">Settings &amp; Data.json</button>
+        <button type="button" class="btn ghost admin-sm" id="admin-save-btn">Save Data.json</button>
+        <button type="button" class="btn ghost admin-sm" id="admin-exit-btn">Exit Admin</button>
+      </div>
+    </div>
   </div>
-  <div id="aedit" hidden>
-    <label for="aname">Shop name</label><input id="aname">
-    <label for="awa">WhatsApp number (country code, digits only)</label><input id="awa" inputmode="numeric">
-    <label for="acur">Currency symbol</label><input id="acur">
-    <label>Products</label><p class="hint">Emoji, name, price, stock (pcs)</p>
-    <div id="alist"></div>
-    <button class="addrow" id="aadd">+ Add new item</button>
-    <p class="err" id="aerr"></p>
-    <div class="actions"><button id="acancel">Cancel</button><button class="send" id="asave">Save changes</button></div>
-    <button class="adminlink" id="alogout">Log out of admin</button>
-  </div>
-</div></div>
 
-<script>
-var $=function(id){return document.getElementById(id)};
-var DATA={shop:"M.H Chocolate Shop",whatsapp:"",currency:"₹",products:[]};
-var cart={};
-var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
-var CUR=function(){return DATA.currency||""};
-function norm(){DATA.products.forEach(function(p){if(typeof p.stock!=="number")p.stock=20})}
-function count(){var n=0;for(var k in cart)n+=cart[k];return n}
-function total(){var t=0;for(var k in cart)t+=cart[k]*DATA.products[k].price;return t}
-function render(){
-  $("shopName").textContent=DATA.shop;document.title=DATA.shop;
-  var g=$("grid");g.innerHTML="";
-  DATA.products.forEach(function(p,i){
-    var c=document.createElement("div");c.className="card";
-    c.innerHTML='<div class="pic'+(p.image?' has':'')+'" aria-hidden="true">'+(p.image?'<img src="'+esc(p.image)+'" alt="">':esc(p.icon||""))+'</div><div class="name">'+esc(p.name)+'</div><div class="price">'+esc(CUR())+esc(p.price)+'</div><div class="stock'+(p.stock<=0?' out':p.stock<=5?' low':'')+'">'+(p.stock<=0?'Out of stock':p.stock+' pcs in stock')+'</div>';
-    var q=cart[i]||0,el;
-    if(!q){el=document.createElement("button");el.className="add";el.textContent=p.stock<=0?"Unavailable":"Add to cart";el.disabled=p.stock<=0;el.onclick=function(){change(i,1)}}
-    else{el=document.createElement("div");el.className="qty";
-      el.innerHTML='<button aria-label="Decrease">−</button><b>'+q+'</b><button aria-label="Increase">+</button>';
-      var b=el.querySelectorAll("button");b[0].onclick=function(){change(i,-1)};b[1].onclick=function(){change(i,1)};b[1].disabled=q>=p.stock}
-    c.appendChild(el);g.appendChild(c);
-  });
-  var n=count(),o=$("open");o.disabled=!n;
-  o.textContent=n?"View order ("+n+(n>1?" items":" item")+") · "+CUR()+total():"Select products";
-}
-function change(i,d){cart[i]=Math.min(DATA.products[i].stock,Math.max(0,(cart[i]||0)+d));if(!cart[i])delete cart[i];render();if($("sheet").classList.contains("open"))lines()}
-function lines(){
-  var h="";for(var k in cart){h+='<div class="row"><span>'+esc(DATA.products[k].name)+' × '+cart[k]+'</span><span>'+esc(CUR())+(cart[k]*DATA.products[k].price)+'</span></div>'}
-  h+='<div class="row sum"><span>Total quantity</span><span>'+count()+'</span></div>';
-  h+='<div class="row sum big"><span>Total amount</span><span>'+esc(CUR())+total()+'</span></div>';
-  $("lines").innerHTML=h;if(!count())$("sheet").classList.remove("open");
-}
-$("open").onclick=function(){lines();$("err").textContent="";$("wa").textContent="";$("sheet").classList.add("open")};
-$("back").onclick=function(){$("sheet").classList.remove("open")};
-$("send").onclick=function(){
-  var name=$("cname").value.trim(),phone=$("cphone").value.trim(),addr=$("caddr").value.trim();
-  if(!name||!phone||!addr){$("err").textContent="Please enter your name, phone number and address.";return}
-  var m="New order - "+DATA.shop+"\n\n";
-  for(var k in cart){m+=cart[k]+" x "+DATA.products[k].name+" = "+CUR()+(cart[k]*DATA.products[k].price)+"\n"}
-  m+="\nTotal quantity: "+count()+"\nTotal amount: "+CUR()+total()+"\n\nName: "+name+"\nPhone: "+phone+"\nAddress: "+addr;
-  var url="https://wa.me/"+DATA.whatsapp+"?text="+encodeURIComponent(m);
-  $("err").textContent="";
-  $("wa").innerHTML='✅ Order ready! In WhatsApp, press <b>Send</b> to confirm your order.<br>Not opening? <a href="'+url+'" target="_blank" rel="noopener">Tap here to send on WhatsApp</a>';
-  var a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener";document.body.appendChild(a);a.click();a.remove();
-};
+  <main id="top">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Hand packed · Ordered on WhatsApp</p>
+        <h1>Sweets worth <span>sharing.</span></h1>
+        <p class="lede">Browse the shelf at <span data-shop>M.H Chocolate Shop</span>, fill a basket, and send the order straight to the shop. No account and no payment on this page.</p>
+        <div class="hero-actions">
+          <a class="btn dark" href="#catalog">Shop the shelf</a>
+          <button class="btn" id="hero-order" type="button">View Order</button>
+        </div>
+      </div>
+      <div class="hero-stage">
+        <img class="hero-photo-alt" src="assets/images/p11.jpg" alt="Choco Moco">
+        <img class="hero-photo" src="assets/images/p1.jpg" alt="Tok Jhal Chocolate jar">
+        <div class="glass-note">
+          <strong id="shelf-count">11</strong>
+          <span>sweets on the shelf today</span>
+        </div>
+      </div>
+    </section>
 
-/* ---------- Admin: saves data.json to your GitHub repo ---------- */
-var draft=null,TK="mh_gh_token",RP="mh_gh_repo";
-function guessRepo(){
-  var h=location.hostname,p=location.pathname.split("/")[1];
-  return /\.github\.io$/.test(h)&&p?h.split(".")[0]+"/"+p:"";
-}
-function api(path,opt){
-  opt=opt||{};opt.headers={"Authorization":"Bearer "+localStorage.getItem(TK),"Accept":"application/vnd.github+json"};
-  return fetch("https://api.github.com/repos/"+localStorage.getItem(RP)+"/contents/"+path,opt);
-}
-function shrink(file){
-  return createImageBitmap(file).then(function(bm){
-    var s=Math.min(1,560/Math.max(bm.width,bm.height)),cv=document.createElement("canvas");
-    cv.width=Math.round(bm.width*s);cv.height=Math.round(bm.height*s);
-    cv.getContext("2d").drawImage(bm,0,0,cv.width,cv.height);
-    return cv.toDataURL("image/jpeg",0.78);
-  });
-}
-function pickPhoto(p){
-  var inp=document.createElement("input");inp.type="file";inp.accept="image/*";
-  inp.onchange=function(){
-    if(!inp.files[0])return;$("aerr").textContent="Processing photo…";
-    shrink(inp.files[0]).then(function(u){p.image=u;$("aerr").textContent="";renderAdmin()},function(){$("aerr").textContent="Photo failed. Try another image."});
-  };inp.click();
-}
-function renderAdmin(){
-  var l=$("alist");l.innerHTML="";
-  draft.products.forEach(function(p,i){
-    var r=document.createElement("div");r.className="arow";
-    r.innerHTML='<input aria-label="Emoji" maxlength="4"><input aria-label="Item name"><input aria-label="Price" type="number" min="0" inputmode="decimal"><input aria-label="Stock (pcs)" type="number" min="0" inputmode="numeric"><button class="del" aria-label="Delete item">×</button>';
-    var f=r.querySelectorAll("input");
-    f[0].value=p.icon||"";f[1].value=p.name;f[2].value=p.price;f[3].value=p.stock;
-    f[0].oninput=function(){p.icon=f[0].value};f[1].oninput=function(){p.name=f[1].value};
-    f[2].oninput=function(){p.price=Number(f[2].value)||0};f[3].oninput=function(){p.stock=Math.max(0,parseInt(f[3].value)||0)};
-    r.querySelector(".del").onclick=function(){draft.products.splice(i,1);renderAdmin()};
-    var ph=document.createElement("div");ph.className="aphoto";
-    if(p.image){var im=document.createElement("img");im.src=p.image;im.alt="";ph.appendChild(im)}
-    var pb=document.createElement("button");pb.textContent=p.image?"Change photo":"Add photo";pb.onclick=function(){pickPhoto(p)};ph.appendChild(pb);
-    if(p.image){var rb=document.createElement("button");rb.textContent="Remove photo";rb.onclick=function(){delete p.image;renderAdmin()};ph.appendChild(rb)}
-    r.appendChild(ph);l.appendChild(r);
-  });
-}
-function openEditor(){
-  draft=JSON.parse(JSON.stringify(DATA));
-  $("aname").value=draft.shop;$("awa").value=draft.whatsapp;$("acur").value=draft.currency;
-  $("aerr").textContent="";$("alogin").hidden=true;$("aedit").hidden=false;renderAdmin();
-}
-$("adminBtn").onclick=function(){
-  $("asheet").classList.add("open");$("lerr").textContent="";
-  if(localStorage.getItem(TK)&&localStorage.getItem(RP))openEditor();
-  else{$("alogin").hidden=false;$("aedit").hidden=true;$("arepo").value=localStorage.getItem(RP)||guessRepo()}
-};
-if(location.hash==="#admin")$("adminBtn").onclick();
-$("lcancel").onclick=$("acancel").onclick=function(){$("asheet").classList.remove("open")};
-$("lgo").onclick=function(){
-  var t=$("atoken").value.trim(),r=$("arepo").value.trim();
-  if(!t||!/^[^\/\s]+\/[^\/\s]+$/.test(r)){$("lerr").textContent="Enter the token and the repository as owner/name.";return}
-  localStorage.setItem(TK,t);localStorage.setItem(RP,r);$("lerr").textContent="Checking…";
-  api("data.json").then(function(res){
-    if(res.ok){$("atoken").value="";openEditor()}
-    else{localStorage.removeItem(TK);$("lerr").textContent="GitHub said no ("+res.status+"). Check the token and the repository name."}
-  }).catch(function(){$("lerr").textContent="No internet connection."});
-};
-$("alogout").onclick=function(){localStorage.removeItem(TK);localStorage.removeItem(RP);$("asheet").classList.remove("open")};
-$("asave").onclick=function(){
-  draft.shop=$("aname").value.trim()||DATA.shop;
-  draft.whatsapp=$("awa").value.replace(/\D/g,"");
-  draft.currency=$("acur").value.trim();
-  draft.products=draft.products.filter(function(p){return p.name.trim()});
-  if(!draft.whatsapp){$("aerr").textContent="Enter a WhatsApp number.";return}
-  if(!draft.products.length){$("aerr").textContent="Add at least one item.";return}
-  $("aerr").textContent="Saving…";
-  var bytes=new TextEncoder().encode(JSON.stringify(draft)),bin="";
-  for(var i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
-  api("data.json").then(function(r){return r.json()}).then(function(cur){
-    return api("data.json",{method:"PUT",body:JSON.stringify({message:"Update shop from admin",content:btoa(bin),sha:cur.sha})});
-  }).then(function(res){
-    if(!res.ok)throw new Error(res.status);
-    DATA=draft;norm();render();
-    $("aerr").style.color="#2e7d32";$("aerr").textContent="Saved! Customers will see it in about 1 minute.";
-    setTimeout(function(){$("aerr").style.color="";$("asheet").classList.remove("open")},2500);
-  }).catch(function(e){$("aerr").textContent="Could not save ("+(e.message||"error")+"). Check your token permission."});
-};
+    <section class="catalog" id="catalog">
+      <div class="catalog-head">
+        <h2>The shelf</h2>
+        <p id="result-count">Loading products</p>
+      </div>
+      <div class="cats" id="cats" role="toolbar" aria-label="Categories"></div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
 
-fetch("data.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(d){DATA=d;norm();render()}).catch(function(){$("grid").innerHTML='<p style="padding:16px">Could not load products. Please refresh.</p>'});
-render();
-</script>
-</body></html>
+  <footer class="site-footer">
+    <p><span data-shop>M.H Chocolate Shop</span> · <span id="year"></span></p>
+    <p>
+      <button type="button" class="link-btn" id="open-admin">Admin mode</button>
+      ·
+      <a href="admin.html">Manage shop</a>
+    </p>
+  </footer>
+
+  <button class="float-cart" id="float-cart" type="button">
+    <span class="float-orb" id="float-count">0</span>
+    <span>Cart<small>View order</small></span>
+  </button>
+
+  <div id="modal-root" hidden></div>
+  <div id="admin-root" hidden></div>
+  <script src="js/cart.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/runtime-admin.js"></script>
+</body>
+</html>
