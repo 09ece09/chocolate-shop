@@ -3,31 +3,66 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>M.H Chocolate Shop</title>
-  <meta name="description" content="M.H Chocolate Shop — browse jars, jellies and sweets, then send your order on WhatsApp.">
-  <meta name="theme-color" content="#97624D">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%232D1B14'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-size='22' fill='%23C9A227' font-family='Georgia'%3EMH%3C/text%3E%3C/svg%3E">
+  <title>M.H Chocolate Shop — Artisan Chocolate House</title>
+  <meta name="description" content="M.H Chocolate Shop — premium hand-packed jars, jellies and chocolate bars. Browse the shelf and order on WhatsApp in seconds.">
+  <meta name="theme-color" content="#2D1B14">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%232D1B14'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='24' fill='%23C9A227' font-family='Georgia'%3EMH%3C/text%3E%3C/svg%3E">
+
+  <!-- Premium fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- GSAP for premium animations (CDN, no build step needed for GitHub Pages) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+  <!-- ═══════════════════════════════════════════════
+       LUXURY PRELOADER
+  ═══════════════════════════════════════════════ -->
+  <div class="preloader" id="preloader" aria-hidden="true">
+    <div class="preloader-inner">
+      <div class="preloader-logo">
+        <span class="preloader-ring"></span>
+        <span class="preloader-mark">MH</span>
+      </div>
+      <p class="preloader-name" data-shop>M.H Chocolate Shop</p>
+      <p class="preloader-tag">Artisan Chocolate House</p>
+      <div class="preloader-bar"><div class="preloader-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       SKIP LINK
+  ═══════════════════════════════════════════════ -->
   <a class="skip" href="#catalog">Skip to products</a>
-  <header class="site-header">
-    <a class="brand" href="#top">
+
+  <!-- ═══════════════════════════════════════════════
+       STICKY GLASS HEADER
+  ═══════════════════════════════════════════════ -->
+  <header class="site-header" id="site-header">
+    <a class="brand" href="#top" aria-label="M.H Chocolate Shop home">
       <span class="mark" aria-hidden="true">MH</span>
-      <span>
+      <span class="brand-text">
         <span class="brand-name" data-shop>M.H Chocolate Shop</span>
-        <span class="brand-tag">Chocolate house</span>
+        <span class="brand-tag">Artisan Chocolate House</span>
       </span>
     </a>
+
     <form class="search" id="search-form" role="search">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      <input id="search" type="search" placeholder="Search chocolates" aria-label="Search products">
+      <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="Search chocolates, jars, jellies…" aria-label="Search products" autocomplete="off">
+      <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" hidden>×</button>
     </form>
+
     <div class="header-actions">
-      <button class="btn ghost" id="view-order" type="button">View Order</button>
+      <button class="btn ghost view-label" id="view-order" type="button">View Order</button>
       <button class="icon-btn" id="bag-btn" type="button" aria-label="Open cart">
         <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8h11l-1 12h-9l-1-12z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 8V7a3 3 0 0 1 6 0v1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
         <span class="badge" id="cart-count" hidden>0</span>
@@ -35,6 +70,7 @@
     </div>
   </header>
 
+  <!-- Admin Bar (unchanged) -->
   <div class="admin-bar" id="admin-bar" hidden>
     <div class="admin-bar-inner">
       <div class="admin-bar-status">
@@ -51,55 +87,238 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════ -->
   <main id="top">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Hand packed · Ordered on WhatsApp</p>
-        <h1>Sweets worth <span>sharing.</span></h1>
-        <p class="lede">Browse the shelf at <span data-shop>M.H Chocolate Shop</span>, fill a basket, and send the order straight to the shop. No account and no payment on this page.</p>
+
+    <!-- ─── HERO ─────────────────────────────────── -->
+    <section class="hero" id="hero">
+
+      <!-- Cocoa dust particles -->
+      <div class="cocoa-dust" aria-hidden="true">
+        <span class="dust" style="--l:8%;--t:70%;--s:4px;--dx:16px;--dur:10s;--delay:0s;"></span>
+        <span class="dust" style="--l:17%;--t:84%;--s:3px;--dx:-12px;--dur:12s;--delay:1.5s;"></span>
+        <span class="dust" style="--l:29%;--t:64%;--s:5px;--dx:20px;--dur:11s;--delay:3s;"></span>
+        <span class="dust" style="--l:45%;--t:80%;--s:3px;--dx:-14px;--dur:9s;--delay:0.8s;"></span>
+        <span class="dust" style="--l:60%;--t:74%;--s:4px;--dx:12px;--dur:13s;--delay:2.2s;"></span>
+        <span class="dust" style="--l:74%;--t:86%;--s:5px;--dx:-18px;--dur:10.5s;--delay:1s;"></span>
+        <span class="dust" style="--l:85%;--t:67%;--s:3px;--dx:10px;--dur:11.5s;--delay:4s;"></span>
+        <span class="dust" style="--l:92%;--t:78%;--s:4px;--dx:-12px;--dur:9.5s;--delay:2.7s;"></span>
+        <!-- Decorative floating shapes (desktop) -->
+        <span class="deco-shape shape-ring" aria-hidden="true"></span>
+        <span class="deco-shape shape-square" aria-hidden="true"></span>
+        <span class="deco-shape shape-dot" aria-hidden="true"></span>
+      </div>
+
+      <!-- Left: editorial text -->
+      <div class="hero-content js-reveal-left">
+        <p class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          Hand-Packed · Ordered on WhatsApp
+        </p>
+        <h1 class="hero-heading">
+          Sweets worth
+          <span class="hero-heading-italic">sharing.</span>
+        </h1>
+        <p class="hero-lede">
+          Browse curated small-batch jars, velvety bars, and artisan jellies at
+          <span data-shop>M.H Chocolate Shop</span>.
+          Build your basket and send your order on WhatsApp — no accounts, no payment here.
+        </p>
+
         <div class="hero-actions">
-          <a class="btn dark" href="#catalog">Shop the shelf</a>
-          <button class="btn" id="hero-order" type="button">View Order</button>
+          <a class="btn cta-primary btn-shimmer" href="#catalog">
+            Shop the Shelf
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12,5 19,12 12,19"/></svg>
+          </a>
+          <button class="btn cta-secondary" id="hero-order" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            View Order
+          </button>
+        </div>
+
+        <!-- Stat counters -->
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong class="stat-num" data-count="18" data-suffix="+">18+</strong>
+            <span class="stat-label">Confections</span>
+          </div>
+          <div class="hero-stat">
+            <strong class="stat-num" data-count="100" data-suffix="%">100%</strong>
+            <span class="stat-label">Fresh Sealed</span>
+          </div>
+          <div class="hero-stat">
+            <strong class="stat-num" data-count="24" data-suffix="h">24h</strong>
+            <span class="stat-label">Fast Dispatch</span>
+          </div>
         </div>
       </div>
-      <div class="hero-stage">
-        <img class="hero-photo-alt" src="assets/images/p11.jpg" alt="Choco Moco">
-        <img class="hero-photo" src="assets/images/p1.jpg" alt="Tok Jhal Chocolate jar">
-        <div class="glass-note">
-          <strong id="shelf-count">11</strong>
-          <span>sweets on the shelf today</span>
+
+      <!-- Right: 3D product showcase stage -->
+      <div class="hero-stage perspective-stage js-reveal-right" id="hero-stage">
+
+        <!-- Ambient spotlight glow -->
+        <div class="stage-glow" aria-hidden="true"></div>
+
+        <!-- Back-left secondary card -->
+        <div class="stage-card stage-card-back" id="stage-card-back" aria-hidden="true">
+          <div class="stage-card-inner">
+            <img src="assets/images/p11.jpg" alt="" loading="lazy">
+            <div class="stage-card-label">
+              <p class="scl-name">Choco Moco</p>
+              <p class="scl-sub">Small-batch cocoa</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top-right secondary card -->
+        <div class="stage-card stage-card-side" id="stage-card-side" aria-hidden="true">
+          <div class="stage-card-inner">
+            <img src="assets/images/p9.jpg" alt="" loading="lazy">
+            <div class="stage-card-label">
+              <p class="scl-name">Dairy Roll</p>
+              <p class="scl-sub">Crisp wafer bar</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main hero product — cinematic entrance -->
+        <div class="hero-main-wrap" id="hero-main-wrap">
+          <div class="hero-photo-frame" id="hero-photo-frame">
+            <img class="hero-photo" src="assets/images/p1.jpg" alt="Tok Jhal Chocolate — M.H Chocolate Shop signature jar" id="hero-photo">
+            <div class="hero-photo-shine" aria-hidden="true"></div>
+            <div class="hero-photo-badge">
+              <div class="hpb-top">
+                <span class="hpb-eyebrow">House Signature</span>
+              </div>
+              <div class="hpb-bottom">
+                <span class="hpb-name">Tok Jhal Chocolate</span>
+                <span class="hpb-tag">150 pcs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating glass shelf count note -->
+        <div class="glass-note" id="glass-note">
+          <div class="gn-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+            Live Shelf
+          </div>
+          <strong class="gn-count" id="shelf-count">18</strong>
+          <span class="gn-sub">sweets on the shelf today</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── TRUST SIGNALS RIBBON ───────────────── -->
+    <section class="trust-ribbon js-scroll-reveal" aria-label="Why shop with us">
+      <div class="trust-ribbon-inner">
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">🌿</span>
+          <span class="trust-text"><strong>Fresh Products</strong> Hand-packed to order</span>
+        </div>
+        <div class="trust-sep" aria-hidden="true"></div>
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">📦</span>
+          <span class="trust-text"><strong>Bulk Orders</strong> Special pricing available</span>
+        </div>
+        <div class="trust-sep" aria-hidden="true"></div>
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">⚡</span>
+          <span class="trust-text"><strong>Fast Delivery</strong> Same-day dispatch</span>
+        </div>
+        <div class="trust-sep" aria-hidden="true"></div>
+        <div class="trust-item">
+          <span class="trust-icon" aria-hidden="true">💬</span>
+          <span class="trust-text"><strong>WhatsApp Easy</strong> No account needed</span>
         </div>
       </div>
     </section>
 
+    <!-- ─── CATALOG ────────────────────────────── -->
     <section class="catalog" id="catalog">
-      <div class="catalog-head">
-        <h2>The shelf</h2>
-        <p id="result-count">Loading products</p>
+      <div class="catalog-head js-scroll-reveal">
+        <div>
+          <h2>The Shelf</h2>
+          <p id="result-count">Loading products…</p>
+        </div>
       </div>
-      <div class="cats" id="cats" role="toolbar" aria-label="Categories"></div>
+      <div class="cats" id="cats" role="toolbar" aria-label="Filter by category"></div>
       <div class="grid" id="grid"></div>
     </section>
+
+    <!-- ─── WHATSAPP CTA SECTION ───────────────── -->
+    <section class="wa-cta js-scroll-reveal" id="wa-cta" aria-labelledby="wa-heading">
+      <div class="wa-cta-inner">
+        <div class="wa-cta-glow" aria-hidden="true"></div>
+        <div class="wa-cta-content">
+          <p class="wa-cta-eyebrow">
+            <span class="eyebrow-dot"></span>
+            Instant WhatsApp Ordering
+          </p>
+          <h2 class="wa-cta-heading" id="wa-heading">Ready to order?<br><span>It takes 60 seconds.</span></h2>
+          <p class="wa-cta-text">
+            Tap the button below to open WhatsApp with a pre-filled order message.
+            No app download, no signup — just chocolate.
+          </p>
+          <div class="wa-cta-actions">
+            <button class="btn wa-btn btn-shimmer" id="wa-cta-order" type="button">
+              <svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.998 2C6.477 2 2 6.477 2 11.999c0 1.934.526 3.741 1.432 5.293L2.019 22l4.834-1.388a9.945 9.945 0 0 0 5.145 1.418h.004c5.52 0 9.996-4.477 9.996-9.999C22 6.478 17.519 2 11.998 2zm0 18.187a8.274 8.274 0 0 1-4.212-1.149l-.303-.18-3.11.816.83-3.038-.198-.311A8.273 8.273 0 0 1 3.73 11.999c0-4.561 3.71-8.274 8.27-8.274 4.558 0 8.27 3.713 8.27 8.274 0 4.56-3.712 8.188-8.272 8.188z"/></svg>
+              Order on WhatsApp
+              <span class="wa-pulse" aria-hidden="true"></span>
+            </button>
+            <button class="btn cta-secondary" id="wa-view-basket" type="button">View Basket</button>
+          </div>
+          <!-- Trust row under CTA -->
+          <div class="wa-trust">
+            <span>✓ No payment on this page</span>
+            <span>✓ Order confirmed via WhatsApp</span>
+            <span>✓ Fast same-day response</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
+  <!-- ─── FOOTER ─────────────────────────────── -->
   <footer class="site-footer">
-    <p><span data-shop>M.H Chocolate Shop</span> · <span id="year"></span></p>
-    <p>
-      <button type="button" class="link-btn" id="open-admin">Admin mode</button>
-      ·
-      <a href="admin.html">Manage shop</a>
-    </p>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="mark small" aria-hidden="true">MH</span>
+        <span>
+          <span class="footer-name" data-shop>M.H Chocolate Shop</span>
+          <span class="footer-tag">Artisan Chocolate House</span>
+        </span>
+      </div>
+      <p class="footer-copy">© <span id="year"></span> <span data-shop>M.H Chocolate Shop</span>. All rights reserved.</p>
+      <p class="footer-links">
+        <button type="button" class="link-btn" id="open-admin">Admin mode</button>
+        ·
+        <a href="admin.html">Manage shop</a>
+      </p>
+    </div>
   </footer>
 
-  <button class="float-cart" id="float-cart" type="button">
+  <!-- Floating Cart Button -->
+  <button class="float-cart" id="float-cart" type="button" aria-label="Open cart">
     <span class="float-orb" id="float-count">0</span>
-    <span>Cart<small>View order</small></span>
+    <span class="float-label">
+      Cart
+      <small>View order</small>
+    </span>
   </button>
 
+  <!-- Modal roots (unchanged from original — admin.js / runtime-admin.js expect these) -->
   <div id="modal-root" hidden></div>
   <div id="admin-root" hidden></div>
+
   <script src="js/cart.js"></script>
   <script src="js/app.js"></script>
   <script src="js/runtime-admin.js"></script>
+  <script src="js/luxury-animations.js"></script>
 </body>
 </html>
