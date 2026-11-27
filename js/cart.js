@@ -433,39 +433,84 @@
     return "";
   }
 
-  function orderMessage() {
-    var info = totals();
+  function orderMessage(order) {
+    var now = new Date();
+    var info = order && Array.isArray(order.items) ? order : totals();
     var shop = state.settings.shopName || DEFAULT_SETTINGS.shopName;
-    var person = state.customer;
-    var blocks = info.items.map(function (item) {
-      return item.name + " × " + item.qty + " = " + money(item.qty * item.price);
+    var person = order && order.customer ? order.customer : state.customer;
+    var date = order && order.date || new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit", month: "short", year: "numeric"
+    }).format(now);
+    var time = order && order.time || new Intl.DateTimeFormat("en-US", {
+      hour: "numeric", minute: "2-digit"
+    }).format(now);
+    var dateId = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0")
+    ].join("");
+    var orderId = order && order.orderId || "MH-" + dateId + "-" + String(Math.floor(1000 + Math.random() * 9000));
+    var address = person.addressMode === "manual" ? person.address.trim() : "Shared Google Maps location";
+    var location = person.addressMode === "manual"
+      ? ""
+      : person.mapLink || String(person.address || "").replace(/^Google Maps:\s*/i, "");
+    var blocks = info.items.map(function (item, index) {
+      return (index + 1) + "️⃣ " + item.name +
+        "\nQty: " + item.qty +
+        "\nUnit Price: " + money(item.price) +
+        "\nSubtotal: " + money(item.qty * item.price);
     });
     return [
-      "Hello " + shop + ",",
+      "🍫 " + shop.toUpperCase(),
+      "━━━━━━━━━━━━━━",
       "",
-      "New Order",
+      "🧾 ORDER REQUEST",
       "",
-      "Name: " + person.name.trim(),
-      "Phone: " + person.phone.trim(),
+      "Order ID: " + orderId,
+      "Order Date: " + date,
+      "Order Time: " + time,
       "",
-      "Address:",
-      person.address.trim(),
+      "👤 CUSTOMER",
       "",
-      "Items:",
+      "Name: " + String(person.name || "").trim(),
+      "Phone: " + String(person.phone || "").trim(),
+      "",
+      "📍 DELIVERY",
+      "",
+      "Address: " + (address || "Not provided"),
+      "",
+      "📌 Location",
+      location || "Not shared",
+      "",
+      "━━━━━━━━━━━━━━",
+      "",
+      "🛒 ITEMS",
       "",
       blocks.join("\n\n"),
       "",
-      "Total Quantity: " + info.qty,
-      "Total Amount: " + money(info.amount),
+      "━━━━━━━━━━━━━━",
       "",
-      "Please confirm my order."
+      "📊 SUMMARY",
+      "",
+      "Total Products: " + info.items.length,
+      "Total Quantity: " + info.qty,
+      "Grand Total: " + money(info.amount),
+      "",
+      "━━━━━━━━━━━━━━",
+      "",
+      "✅ Please confirm stock availability and expected delivery date.",
+      "",
+      "Thank you for your service.",
+      "",
+      "Sent from:",
+      "🌐 MH Chocolate Shop Website"
     ].join("\n");
   }
 
-  function whatsappUrl() {
+  function whatsappUrl(order) {
     var digits = String(state.settings.whatsapp || "").replace(/\D/g, "");
     if (!digits) return "";
-    return "https://wa.me/" + digits + "?text=" + encodeURIComponent(orderMessage());
+    return "https://wa.me/" + digits + "?text=" + encodeURIComponent(orderMessage(order));
   }
 
   window.MH = {

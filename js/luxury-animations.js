@@ -327,23 +327,7 @@
 
     if (ctaBtn) {
       ctaBtn.addEventListener('click', function () {
-        // Build WhatsApp URL using the shared MH library
-        var url = typeof MH !== 'undefined' ? MH.whatsappUrl() : '';
-        if (url) {
-          // If cart has items, open order modal first; else open blank WA chat
-          if (typeof MH !== 'undefined' && MH.totals().qty > 0) {
-            openOrder();
-          } else {
-            var wa = typeof MH !== 'undefined' ? MH.settings().whatsapp : '916296609958';
-            var digits = String(wa).replace(/\D/g, '');
-            var shopName = typeof MH !== 'undefined' ? MH.settings().shopName : 'M.H Chocolate Shop';
-            var text = encodeURIComponent('Hello ' + shopName + ', I would like to place an order.');
-            window.open('https://wa.me/' + digits + '?text=' + text, '_blank', 'noopener,noreferrer');
-          }
-        } else {
-          // No MH yet — just trigger order modal
-          openOrder();
-        }
+        openOrder();
       });
     }
 

@@ -4,6 +4,7 @@
   var category = "All";
   var orderOpen = false;
   var orderJustCompleted = false;
+  var orderReview = null;
 
   function stockClass(stock) {
     if (stock <= 0) return "stock out";
@@ -130,8 +131,52 @@
     if (send) send.disabled = false;
   }
 
+  function renderOrderReview(order) {
+    var review = document.getElementById("order-review");
+    if (!review) return;
+    var person = order.customer;
+    var safeMapLink = /^https:\/\/(maps\.google\.com|www\.google\.com\/maps)/i.test(person.mapLink || "")
+      ? person.mapLink
+      : "";
+    var items = order.items.map(function (item, index) {
+      return '<li class="invoice-item"><span class="invoice-index">' + String(index + 1).padStart(2, "0") + '</span>' +
+        '<div class="invoice-item-copy"><strong>' + MH.esc(item.name) + '</strong><span>Qty ' + item.qty + ' · ' + MH.esc(MH.money(item.price)) + ' each</span></div>' +
+        '<strong class="invoice-subtotal">' + MH.esc(MH.money(item.qty * item.price)) + '</strong></li>';
+    }).join("");
+    var address = person.address || (safeMapLink ? "Shared location" : "");
+
+    review.innerHTML =
+      '<div class="invoice-card">' +
+        '<div class="invoice-topline"><span>🍫 ' + MH.esc(MH.settings().shopName).toUpperCase() + '</span><span>ORDER INVOICE</span></div>' +
+        '<div class="invoice-meta"><span>Order ID</span><strong>' + MH.esc(order.orderId) + '</strong></div>' +
+        '<div class="invoice-datetime"><span>' + MH.esc(order.date) + '</span><span>' + MH.esc(order.time) + '</span></div>' +
+        '<div class="invoice-section"><h3>Customer details</h3>' +
+          '<p><strong>' + MH.esc(person.name) + '</strong><span>' + MH.esc(person.phone) + '</span></p></div>' +
+        '<div class="invoice-section"><h3>Delivery address</h3>' +
+          '<p><span>' + MH.esc(address || "Address provided") + '</span>' +
+            (safeMapLink ? '<a href="' + MH.esc(safeMapLink) + '" target="_blank" rel="noopener noreferrer">Open location ↗</a>' : '') +
+          '</p></div>' +
+        '<div class="invoice-section invoice-items-section"><h3>Order items</h3><ol class="invoice-items">' + items + '</ol></div>' +
+        '<div class="invoice-totals"><p><span>Total products</span><strong>' + order.items.length + '</strong></p>' +
+          '<p><span>Total quantity</span><strong>' + order.qty + '</strong></p>' +
+          '<p class="invoice-grand"><span>Total amount</span><strong>' + MH.esc(MH.money(order.amount)) + '</strong></p></div>' +
+      '</div>' +
+      '<ul class="order-checklist" aria-label="Order details confirmed">' +
+        '<li><span aria-hidden="true">✓</span> Customer details</li>' +
+        '<li><span aria-hidden="true">✓</span> Delivery address</li>' +
+        '<li><span aria-hidden="true">✓</span> Order items</li>' +
+        '<li><span aria-hidden="true">✓</span> Total amount</li>' +
+      '</ul>' +
+      '<div class="order-trust-grid" aria-label="Shop assurances">' +
+        '<span>🍫 Fresh products</span><span>📦 Bulk orders supported</span>' +
+        '<span>💬 WhatsApp confirmation</span><span>🔒 Secure ordering</span>' +
+      '</div>' +
+      '<button class="btn secondary order-edit-btn" type="button" data-act="edit-order">Edit details</button>';
+  }
+
   function openOrder() {
     orderOpen = true;
+    orderReview = null;
     var root = document.getElementById("modal-root");
     var person = MH.customer();
     // Determine saved address mode
@@ -140,10 +185,11 @@
     var savedManual = person.address || "";
 
     root.hidden = false;
-    root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet" id="order-form">' +
+    root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet order-sheet" id="order-form">' +
       '<button type="button" class="close" data-act="close" aria-label="Close">×</button>' +
-      '<h2>Your order</h2><p class="sheet-lead">Send the details to the shop on WhatsApp. No payment is taken on this page.</p>' +
-      '<div id="order-summary"></div>' +
+      '<p class="eyebrow order-eyebrow"><span class="eyebrow-dot"></span> A little sweetness, made personal</p>' +
+      '<h2>Your order</h2><p class="sheet-lead">Review your basket and delivery details before sending your request. No payment is taken here.</p>' +
+      '<div id="order-details-step"><div id="order-summary"></div>' +
 
       // Customer name
       '<label class="field"><span>Customer name</span><input id="cust-name" name="name" autocomplete="name" required value="' + MH.esc(person.name) + '"></label>' +
@@ -180,13 +226,18 @@
 
         '<input type="hidden" id="cust-address-mode" value="' + savedMode + '">' +
       '</div>' +
+      '<div class="order-trust-grid order-form-trust" aria-label="Shop assurances">' +
+        '<span>🍫 Fresh products</span><span>📦 Bulk orders supported</span>' +
+        '<span>💬 WhatsApp confirmation</span><span>🔒 Secure ordering</span>' +
+      '</div></div>' +
+      '<section class="order-review" id="order-review" aria-live="polite" hidden></section>' +
 
-      '<p class="form-error" id="order-error" role="alert"></p>' +
+      '<div class="order-action-bar"><p class="form-error" id="order-error" role="alert"></p>' +
       '<button type="submit" class="btn full wa-btn btn-shimmer" id="send-order">' +
         '<svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
-        'Send Order on WhatsApp' +
+        '<span id="send-order-label">Review your order</span>' +
         '<span class="wa-pulse"></span>' +
-      '</button>' +
+      '</button></div>' +
       '</form></div>';
 
     document.body.classList.add("lock");
@@ -257,6 +308,7 @@
   function closeOrder() {
     orderOpen = false;
     orderJustCompleted = false;
+    orderReview = null;
     var root = document.getElementById("modal-root");
     root.hidden = true;
     root.innerHTML = "";
@@ -358,7 +410,34 @@
       error.textContent = "Add at least one product before sending the order.";
       return;
     }
-    var url = MH.whatsappUrl();
+    if (!orderReview) {
+      var now = new Date();
+      var totals = MH.totals();
+      var dateId = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0")
+      ].join("");
+      orderReview = {
+        orderId: "MH-" + dateId + "-" + String(Math.floor(1000 + Math.random() * 9000)),
+        date: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(now),
+        time: new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(now),
+        customer: Object.assign({}, person, { address: mode === "manual" ? person.address : "" }),
+        items: totals.items.map(function (item) {
+          return { id: item.id, name: item.name, price: item.price, qty: item.qty };
+        }),
+        qty: totals.qty,
+        amount: totals.amount
+      };
+      document.getElementById("order-details-step").hidden = true;
+      document.getElementById("order-review").hidden = false;
+      renderOrderReview(orderReview);
+      document.getElementById("send-order-label").textContent = "Place order on WhatsApp";
+      document.querySelector("#order-modal .sheet").scrollTop = 0;
+      error.textContent = "";
+      return;
+    }
+    var url = MH.whatsappUrl(orderReview);
     if (!url) {
       error.textContent = "The shop WhatsApp number is missing. Ask the shop to set it in admin settings.";
       return;
@@ -383,6 +462,13 @@
     }
     var act = button.dataset.act;
     if (act === "close") closeOrder();
+    else if (act === "edit-order") {
+      orderReview = null;
+      document.getElementById("order-details-step").hidden = false;
+      document.getElementById("order-review").hidden = true;
+      document.getElementById("send-order-label").textContent = "Review your order";
+      document.getElementById("order-error").textContent = "";
+    }
     else if (act === "confirm-sent") {
       orderJustCompleted = true;
       MH.completeOrder();
@@ -441,6 +527,7 @@
   });
 
   window.MHStorefront = {
-    refresh: refreshAll
+    refresh: refreshAll,
+    openOrder: openOrder
   };
 })();
