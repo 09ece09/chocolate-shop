@@ -44,16 +44,6 @@
       "description": "Quantity: 150. pcs / Sale Price:  ₹1"
     },
     {
-      "id": "p5",
-      "name": "Tulse Jelly ( 1/- 2.pcs )",
-      "price": 45,
-      "stock": 5,
-      "category": "Jelly",
-      "icon": "🍬",
-      "image": "assets/images/p5.jpg",
-      "description": "Small tulsi jelly sweets."
-    },
-    {
       "id": "p6",
       "name": "Mint Fresh",
       "price": 120,
