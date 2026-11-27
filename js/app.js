@@ -134,18 +134,118 @@
     orderOpen = true;
     var root = document.getElementById("modal-root");
     var person = MH.customer();
+    // Determine saved address mode
+    var savedMode = person.addressMode || "map";
+    var savedMapLink = person.mapLink || "";
+    var savedManual = person.address || "";
+
     root.hidden = false;
     root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet" id="order-form">' +
       '<button type="button" class="close" data-act="close" aria-label="Close">×</button>' +
-      "<h2>Your order</h2><p class=\"sheet-lead\">Send the details to the shop on WhatsApp. No payment is taken on this page.</p>" +
+      '<h2>Your order</h2><p class="sheet-lead">Send the details to the shop on WhatsApp. No payment is taken on this page.</p>' +
       '<div id="order-summary"></div>' +
+
+      // Customer name
       '<label class="field"><span>Customer name</span><input id="cust-name" name="name" autocomplete="name" required value="' + MH.esc(person.name) + '"></label>' +
-      '<label class="field"><span>Phone number</span><input id="cust-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required value="' + MH.esc(person.phone) + '"></label>' +
-      '<label class="field"><span>Delivery address</span><textarea id="cust-address" name="address" required>' + MH.esc(person.address) + "</textarea></label>" +
+
+      // Phone number — numbers only, maxlength 10
+      '<label class="field"><span>Phone number</span>' +
+      '<input id="cust-phone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" autocomplete="tel" required placeholder="10-digit mobile number" value="' + MH.esc(person.phone.replace(/\D/g,"").slice(0,10)) + '">' +
+      '<span class="field-hint" id="phone-hint">Enter exactly 10 digits</span></label>' +
+
+      // Delivery address — toggle map vs manual
+      '<div class="field">' +
+        '<span>Delivery address</span>' +
+        '<div class="addr-toggle">' +
+          '<button type="button" class="addr-tab' + (savedMode === "map" ? " active" : "") + '" data-addr-tab="map">📍 Share Location</button>' +
+          '<button type="button" class="addr-tab' + (savedMode === "manual" ? " active" : "") + '" data-addr-tab="manual">✏️ Type Address</button>' +
+        '</div>' +
+
+        // Map option
+        '<div id="addr-map-panel"' + (savedMode !== "map" ? ' style="display:none"' : '') + '>' +
+          '<div class="map-action-row">' +
+            '<button type="button" class="btn map-share-btn" id="get-location-btn">📍 Get My Location</button>' +
+            '<span class="field-hint" id="location-status">' + (savedMapLink ? '✅ Location captured' : 'Tap to share your current location') + '</span>' +
+          '</div>' +
+          '<input type="hidden" id="cust-map-link" name="mapLink" value="' + MH.esc(savedMapLink) + '">' +
+          (savedMapLink ? '<a class="map-preview-link" href="' + MH.esc(savedMapLink) + '" target="_blank" rel="noopener">View on Google Maps ↗</a>' : '') +
+        '</div>' +
+
+        // Manual address option
+        '<div id="addr-manual-panel"' + (savedMode !== "manual" ? ' style="display:none"' : '') + '>' +
+          '<input id="cust-shop" name="shopName" placeholder="Shop / Building name" value="' + MH.esc(person.shopName || "") + '" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;outline:none;background:rgba(255,255,255,0.8);">' +
+          '<input id="cust-street" name="street" placeholder="Street / Area" value="' + MH.esc(person.street || "") + '" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;outline:none;background:rgba(255,255,255,0.8);">' +
+          '<input id="cust-landmark" name="landmark" placeholder="Landmark (near...)" value="' + MH.esc(person.landmark || "") + '" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;outline:none;background:rgba(255,255,255,0.8);">' +
+        '</div>' +
+
+        '<input type="hidden" id="cust-address-mode" value="' + savedMode + '">' +
+      '</div>' +
+
       '<p class="form-error" id="order-error" role="alert"></p>' +
-      '<button type="submit" class="btn full" id="send-order">Send Order On WhatsApp</button></form></div>';
+      '<button type="submit" class="btn full wa-btn btn-shimmer" id="send-order">' +
+        '<svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+        'Send Order on WhatsApp' +
+        '<span class="wa-pulse"></span>' +
+      '</button>' +
+      '</form></div>';
+
     document.body.classList.add("lock");
     renderSummary();
+
+    // Address tab switching
+    root.querySelectorAll(".addr-tab").forEach(function(tab) {
+      tab.addEventListener("click", function() {
+        var mode = tab.dataset.addrTab;
+        document.getElementById("cust-address-mode").value = mode;
+        root.querySelectorAll(".addr-tab").forEach(function(t) { t.classList.remove("active"); });
+        tab.classList.add("active");
+        document.getElementById("addr-map-panel").style.display = mode === "map" ? "" : "none";
+        document.getElementById("addr-manual-panel").style.display = mode === "manual" ? "" : "none";
+      });
+    });
+
+    // Get location button
+    var locBtn = document.getElementById("get-location-btn");
+    if (locBtn) {
+      locBtn.addEventListener("click", function() {
+        var status = document.getElementById("location-status");
+        if (!navigator.geolocation) {
+          status.textContent = "⚠️ Location not supported on this browser.";
+          return;
+        }
+        status.textContent = "⏳ Getting your location…";
+        locBtn.disabled = true;
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          var lat = pos.coords.latitude.toFixed(6);
+          var lng = pos.coords.longitude.toFixed(6);
+          var link = "https://maps.google.com/?q=" + lat + "," + lng;
+          document.getElementById("cust-map-link").value = link;
+          status.innerHTML = '✅ Location captured! <a href="' + link + '" target="_blank" rel="noopener" style="color:var(--gold-dark);font-weight:600;">View on Maps ↗</a>';
+          locBtn.disabled = false;
+          MH.saveCustomer(readCustomerFromForm());
+        }, function() {
+          status.textContent = "⚠️ Location denied. Please type your address instead.";
+          locBtn.disabled = false;
+        }, { timeout: 10000 });
+      });
+    }
+
+    // Phone digit-only enforcement
+    var phoneInput = document.getElementById("cust-phone");
+    if (phoneInput) {
+      phoneInput.addEventListener("input", function() {
+        var digits = this.value.replace(/\D/g, "").slice(0, 10);
+        this.value = digits;
+        var hint = document.getElementById("phone-hint");
+        if (hint) {
+          if (digits.length === 0) hint.textContent = "Enter exactly 10 digits";
+          else if (digits.length < 10) hint.textContent = digits.length + "/10 digits entered";
+          else hint.textContent = "✅ Valid phone number";
+        }
+        MH.saveCustomer(readCustomerFromForm());
+      });
+    }
+
     if (MH.hasPendingOrder()) {
       var sheet = root.querySelector(".sheet");
       if (sheet) sheet.scrollTop = 0;
@@ -188,10 +288,23 @@
   }
 
   function readCustomerFromForm() {
+    var mode = (document.getElementById("cust-address-mode") || {}).value || "map";
+    var mapLink = (document.getElementById("cust-map-link") || {}).value || "";
+    var shopName = (document.getElementById("cust-shop") || {}).value || "";
+    var street = (document.getElementById("cust-street") || {}).value || "";
+    var landmark = (document.getElementById("cust-landmark") || {}).value || "";
+    // Build a combined address string for backward-compat
+    var manualAddr = [shopName, street, landmark].filter(Boolean).join(", ");
+    var address = mode === "map" ? (mapLink ? "Google Maps: " + mapLink : "") : manualAddr;
     return {
-      name: document.getElementById("cust-name").value,
-      phone: document.getElementById("cust-phone").value,
-      address: document.getElementById("cust-address").value
+      name: (document.getElementById("cust-name") || {}).value || "",
+      phone: ((document.getElementById("cust-phone") || {}).value || "").replace(/\D/g,"").slice(0,10),
+      address: address,
+      addressMode: mode,
+      mapLink: mapLink,
+      shopName: shopName,
+      street: street,
+      landmark: landmark
     };
   }
 
@@ -216,8 +329,29 @@
     var person = readCustomerFromForm();
     MH.saveCustomer(person);
     var phoneDigits = person.phone.replace(/\D/g, "");
-    if (!person.name.trim() || phoneDigits.length < 10 || !person.address.trim()) {
-      error.textContent = "Enter your name, a phone number, and the delivery address.";
+    // Determine address validity based on mode
+    var mode = person.addressMode || "map";
+    var addressOk = false;
+    if (mode === "map") {
+      addressOk = !!person.mapLink;
+    } else {
+      var manualParts = [person.shopName, person.street, person.landmark].filter(function(s){ return s && s.trim(); });
+      addressOk = manualParts.length >= 1;
+    }
+    if (!person.name.trim()) {
+      error.textContent = "Please enter your name.";
+      return;
+    }
+    if (phoneDigits.length !== 10) {
+      error.textContent = "Phone number must be exactly 10 digits.";
+      return;
+    }
+    if (!addressOk) {
+      if (mode === "map") {
+        error.textContent = "Please share your location or switch to 'Type Address'.";
+      } else {
+        error.textContent = "Please enter at least a shop/street address.";
+      }
       return;
     }
     if (!MH.totals().qty) {

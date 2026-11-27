@@ -298,12 +298,16 @@
   function customer() {
     return state.customer;
   }
-
   function saveCustomer(next) {
     state.customer = {
       name: next.name || "",
       phone: next.phone || "",
-      address: next.address || ""
+      address: next.address || "",
+      addressMode: next.addressMode || "map",
+      mapLink: next.mapLink || "",
+      shopName: next.shopName || "",
+      street: next.street || "",
+      landmark: next.landmark || ""
     };
     return writeJSON(KEYS.customer, state.customer);
   }
