@@ -25,13 +25,13 @@
     },
     {
       "id": "p3",
-      "name": "Doi Motka Chocolate ( 1/- )",
+      "name": "Doi Motka Chocolate",
       "price": 120,
       "stock": 5,
       "category": "Jars",
       "icon": "🍬",
       "image": "assets/images/p3.jpg",
-      "description": "Creamy yogurt-style chocolate, 150 pieces in a jar."
+      "description": "Quantity: 150. pcs / Sale Price:  ₹1"
     },
     {
       "id": "p4",
