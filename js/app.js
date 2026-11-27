@@ -138,10 +138,7 @@
     var review = document.getElementById("order-review");
     if (!review) return;
     var person = order.customer;
-    var mapLink = person.addressMode === "manual" ? "" : String(person.mapLink || "");
-    var safeMapLink = /^https:\/\/(maps\.google\.com|maps\.app\.goo\.gl|www\.google\.com\/maps)(?:[/?#]|$)/i.test(mapLink)
-      ? mapLink
-      : "";
+    var mapUrl = safeMapLink(person.mapLink);
     var sharedPrompt = orderShared
       ? '<div class="order-confirm" role="region" aria-label="Confirm WhatsApp order">' +
         '<p class="order-confirm-title">Did you send this order on WhatsApp?</p>' +
@@ -156,18 +153,18 @@
         '<div class="invoice-item-copy"><strong>' + MH.esc(item.name) + '</strong><span>Qty ' + item.qty + ' · ' + MH.esc(MH.money(item.price)) + ' each</span></div>' +
         '<strong class="invoice-subtotal">' + MH.esc(MH.money(item.qty * item.price)) + '</strong></li>';
     }).join("");
-    var address = person.address || (safeMapLink ? "Shared location" : "");
+    var address = person.address || (mapUrl ? "Shared location" : "");
 
     review.innerHTML = sharedPrompt +
       '<div class="invoice-card">' +
         '<div class="invoice-topline"><span>🍫 ' + MH.esc(MH.settings().shopName).toUpperCase() + '</span><span>ORDER INVOICE</span></div>' +
         '<div class="invoice-meta"><span>Order ID</span><strong>' + MH.esc(order.orderId) + '</strong></div>' +
         '<div class="invoice-datetime"><span>' + MH.esc(order.date) + '</span><span>' + MH.esc(order.time) + '</span></div>' +
-        '<div class="invoice-section"><h3>Customer details</h3>' +
-          '<p><strong>' + MH.esc(person.name) + '</strong><span>' + MH.esc(person.phone) + '</span></p></div>' +
-        '<div class="invoice-section"><h3>Delivery address</h3>' +
-          '<p><span>' + MH.esc(address || "Address provided") + '</span>' +
-            (safeMapLink ? '<a href="' + MH.esc(safeMapLink) + '" target="_blank" rel="noopener noreferrer">Open location ↗</a>' : '') +
+        '<div class="invoice-section"><h3>Store / contact details</h3>' +
+          '<p><strong>' + MH.esc(person.shopName || "Store") + '</strong><span>Contact: ' + MH.esc(person.name) + '</span><span>Phone: ' + MH.esc(person.phone) + '</span></p></div>' +
+        '<div class="invoice-section"><h3>Delivery information</h3>' +
+          '<p>' + (address ? '<span>Address: ' + MH.esc(address) + '</span>' : '') +
+            (mapUrl ? '<a href="' + MH.esc(mapUrl) + '" target="_blank" rel="noopener noreferrer">Open location ↗</a>' : '') +
           '</p></div>' +
         '<div class="invoice-section invoice-items-section"><h3>Order items</h3><ol class="invoice-items">' + items + '</ol></div>' +
         '<div class="invoice-totals"><p><span>Total products</span><strong>' + order.items.length + '</strong></p>' +
@@ -181,14 +178,14 @@
             '</div>'
           : '<p class="order-pdf-error" role="status">' + MH.esc(orderPdfError || "PDF preview is unavailable. You can still send the order on WhatsApp.") + '</p>') +
       '<ul class="order-checklist" aria-label="Order details confirmed">' +
-        '<li><span aria-hidden="true">✓</span> Customer details</li>' +
+        '<li><span aria-hidden="true">✓</span> Business details</li>' +
         '<li><span aria-hidden="true">✓</span> Delivery address</li>' +
         '<li><span aria-hidden="true">✓</span> Order items</li>' +
         '<li><span aria-hidden="true">✓</span> Total amount</li>' +
       '</ul>' +
       '<div class="order-trust-grid" aria-label="Shop assurances">' +
-        '<span>🍫 Fresh products</span><span>📦 Bulk orders supported</span>' +
-        '<span>💬 WhatsApp confirmation</span><span>🔒 Secure ordering</span>' +
+        '<span>📦 Bulk orders supported</span><span>⚡ Fast confirmation</span>' +
+        '<span>🔒 Secure ordering</span><span>💬 WhatsApp updates</span>' +
       '</div>' +
       '<button class="btn secondary order-edit-btn" type="button" data-act="edit-order">Edit details</button>';
   }
@@ -279,17 +276,19 @@
     y += 64;
 
     var customer = order.customer;
-    var locationUrl = customer.addressMode === "manual" ? "" : safeMapLink(customer.mapLink);
+    var locationUrl = safeMapLink(customer.mapLink);
     var address = customer.address || (locationUrl ? "Shared location" : "Address not provided");
-    var nameLines = doc.splitTextToSize(pdfText(customer.name), contentWidth - 24);
-    var customerHeight = 38 + nameLines.length * 12;
+    var storeNameLines = doc.splitTextToSize(pdfText(customer.shopName), contentWidth - 24);
+    var contactLines = doc.splitTextToSize(pdfText(customer.name), contentWidth - 24);
+    var customerHeight = 40 + storeNameLines.length * 12 + contactLines.length * 11;
     ensureSpace(customerHeight + 8);
     doc.setDrawColor(colors.line[0], colors.line[1], colors.line[2]);
     doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
     doc.roundedRect(margin, y, contentWidth, customerHeight, 7, 7, "FD");
-    text("CUSTOMER DETAILS", margin + 12, y + 16, 8, colors.gold, "bold");
-    text(nameLines, margin + 12, y + 32, 9, colors.ink, "bold");
-    text("Phone: " + customer.phone, margin + 12, y + 33 + nameLines.length * 12, 8, colors.muted, "normal");
+    text("STORE / CONTACT", margin + 12, y + 16, 8, colors.gold, "bold");
+    text(storeNameLines, margin + 12, y + 32, 9, colors.ink, "bold");
+    text(contactLines, margin + 12, y + 32 + storeNameLines.length * 12, 8, colors.muted, "normal");
+    text("Phone: " + customer.phone, margin + 12, y + 32 + storeNameLines.length * 12 + contactLines.length * 11, 8, colors.muted, "normal");
     y += customerHeight + 8;
 
     var addressLines = doc.splitTextToSize(pdfText(address), contentWidth - 24);
@@ -398,117 +397,107 @@
     if (chatWindow) chatWindow.opener = null;
   }
 
+  function renderLocationStatus(mapLink) {
+    var status = document.getElementById("location-status");
+    var safeLink = safeMapLink(mapLink);
+    if (!status) return;
+    status.innerHTML = safeLink
+      ? '<div class="location-success-card"><strong>✅ Location Shared Successfully</strong><span>Location received for accurate delivery.</span><a href="' + MH.esc(safeLink) + '" target="_blank" rel="noopener noreferrer">View on Map</a></div>'
+      : '<p class="location-help">Share a map location for faster delivery. Address is optional when location is shared.</p>';
+  }
+
   function openOrder() {
     orderOpen = true;
     orderReview = null;
     orderShared = false;
     var root = document.getElementById("modal-root");
     var person = MH.customer();
-    // Determine saved address mode
-    var savedMode = person.addressMode || "map";
-    var savedMapLink = person.mapLink || "";
-    var savedManual = person.address || "";
+    var savedMapLink = safeMapLink(person.mapLink);
+    var savedAddress = String(person.address || "");
+    if (savedMapLink && savedAddress === "Google Maps: " + savedMapLink) savedAddress = "";
 
     root.hidden = false;
     root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet order-sheet" id="order-form">' +
       '<button type="button" class="close order-close" data-act="close" aria-label="Close order and return to shop">×<span>Close</span></button>' +
-      '<p class="eyebrow order-eyebrow"><span class="eyebrow-dot"></span> A little sweetness, made personal</p>' +
-      '<h2>Your order</h2><p class="sheet-lead">Review your details, then send the full order to the shop in WhatsApp. You can also view or download a phone-friendly PDF invoice.</p>' +
+      '<p class="eyebrow order-eyebrow"><span class="eyebrow-dot"></span> WHOLESALE CHECKOUT</p>' +
+      '<h2>Delivery details</h2><p class="sheet-lead">Tell us where to deliver your bulk order. Share a location or enter an address.</p>' +
       '<div id="order-details-step"><div id="order-summary"></div>' +
-
-      // Customer name
-      '<label class="field"><span>Customer name</span><input id="cust-name" name="name" autocomplete="name" required value="' + MH.esc(person.name) + '"></label>' +
-
-      // Phone number — numbers only, maxlength 10
-      '<label class="field"><span>Phone number</span>' +
-      '<input id="cust-phone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" autocomplete="tel" required placeholder="10-digit mobile number" value="' + MH.esc(person.phone.replace(/\D/g,"").slice(0,10)) + '">' +
-      '<span class="field-hint" id="phone-hint">Enter exactly 10 digits</span></label>' +
-
-      // Delivery address — toggle map vs manual
-      '<div class="field">' +
-        '<span>Delivery address</span>' +
-        '<div class="addr-toggle">' +
-          '<button type="button" class="addr-tab' + (savedMode === "map" ? " active" : "") + '" data-addr-tab="map">📍 Share Location</button>' +
-          '<button type="button" class="addr-tab' + (savedMode === "manual" ? " active" : "") + '" data-addr-tab="manual">✏️ Type Address</button>' +
+      '<section class="delivery-card business-details-card" aria-labelledby="delivery-info-title">' +
+        '<div class="delivery-section-heading"><span class="delivery-section-icon">01</span><div><h3 id="delivery-info-title">Delivery Information</h3><p>Business and contact details for order confirmation.</p></div></div>' +
+        '<div class="delivery-fields-grid">' +
+          '<label class="field"><span>Store / Business Name <b>*</b></span><input id="cust-store-name" name="shopName" autocomplete="organization" required placeholder="ABC Sweets & Snacks" value="' + MH.esc(person.shopName || "") + '"></label>' +
+          '<label class="field"><span>Contact Person <b>*</b></span><input id="cust-name" name="name" autocomplete="name" required placeholder="Owner Name" value="' + MH.esc(person.name || "") + '"></label>' +
+          '<label class="field"><span>Mobile Number <b>*</b></span>' +
+            '<input id="cust-phone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" autocomplete="tel" required placeholder="10-digit mobile number" value="' + MH.esc(String(person.phone || "").replace(/\D/g, "").slice(0, 10)) + '">' +
+            '<span class="field-hint" id="phone-hint">Enter your 10-digit mobile number</span></label>' +
         '</div>' +
-
-        // Map option
-        '<div id="addr-map-panel"' + (savedMode !== "map" ? ' style="display:none"' : '') + '>' +
-          '<div class="map-action-row">' +
-            '<button type="button" class="btn map-share-btn" id="get-location-btn">📍 Get My Location</button>' +
-            '<span class="field-hint" id="location-status">' + (savedMapLink ? '✅ Location captured' : 'Tap to share your current location') + '</span>' +
-          '</div>' +
+      '</section>' +
+      '<section class="delivery-card location-options-card" aria-labelledby="delivery-location-title">' +
+        '<div class="delivery-section-heading"><span class="delivery-section-icon">02</span><div><h3 id="delivery-location-title">Delivery Location</h3><p>Share a map pin or type your full delivery address.</p></div></div>' +
+        '<div class="location-option recommended-option"><div class="location-option-heading"><span>OPTION 1 · RECOMMENDED</span><h4>🗺️ Share Live Location</h4></div>' +
+          '<button type="button" class="btn map-share-btn location-share-btn" id="get-location-btn">📍 Share Current Location</button>' +
+          '<div id="location-status" class="location-status" role="status" aria-live="polite"></div>' +
           '<input type="hidden" id="cust-map-link" name="mapLink" value="' + MH.esc(savedMapLink) + '">' +
-          (savedMapLink ? '<a class="map-preview-link" href="' + MH.esc(savedMapLink) + '" target="_blank" rel="noopener">View on Google Maps ↗</a>' : '') +
+          '<input type="hidden" id="cust-latitude" name="latitude" value="' + MH.esc(person.latitude || "") + '">' +
+          '<input type="hidden" id="cust-longitude" name="longitude" value="' + MH.esc(person.longitude || "") + '">' +
         '</div>' +
-
-        // Manual address option
-        '<div id="addr-manual-panel"' + (savedMode !== "manual" ? ' style="display:none"' : '') + '>' +
-          '<input id="cust-shop" name="shopName" placeholder="Shop / Building name" value="' + MH.esc(person.shopName || "") + '" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;outline:none;background:rgba(255,255,255,0.8);">' +
-          '<input id="cust-street" name="street" placeholder="Street / Area" value="' + MH.esc(person.street || "") + '" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;outline:none;background:rgba(255,255,255,0.8);">' +
-          '<input id="cust-landmark" name="landmark" placeholder="Landmark (near...)" value="' + MH.esc(person.landmark || "") + '" style="width:100%;border:1px solid var(--line);border-radius:14px;padding:12px;outline:none;background:rgba(255,255,255,0.8);">' +
-        '</div>' +
-
-        '<input type="hidden" id="cust-address-mode" value="' + savedMode + '">' +
-      '</div>' +
+        '<div class="delivery-or"><span>OR</span></div>' +
+        '<label class="field delivery-address-field"><span>✏️ Enter Delivery Address</span>' +
+          '<textarea id="cust-address" name="address" rows="5" autocomplete="street-address" placeholder="Shop Name:&#10;Area/Market:&#10;Road/Landmark:&#10;Town:&#10;PIN Code:">' + MH.esc(savedAddress) + '</textarea>' +
+          '<span class="field-hint">Example: Maa Tara Sweets, Kaliachak Main Market, Near Bus Stand, Malda, 732201</span></label>' +
+      '</section>' +
+      '<aside class="better-delivery-card"><strong>🚚 Better Delivery</strong><ul>' +
+        '<li>Share a map location for faster delivery.</li><li>Address is optional when a location is shared.</li><li>Our delivery team will contact you before dispatch.</li>' +
+      '</ul></aside>' +
       '<div class="order-trust-grid order-form-trust" aria-label="Shop assurances">' +
-        '<span>🍫 Fresh products</span><span>📦 Bulk orders supported</span>' +
-        '<span>💬 WhatsApp confirmation</span><span>🔒 Secure ordering</span>' +
+        '<span>📦 Bulk orders supported</span><span>⚡ Fast confirmation</span>' +
+        '<span>🔒 Secure ordering</span><span>💬 WhatsApp updates</span>' +
       '</div></div>' +
       '<section class="order-review" id="order-review" aria-live="polite" hidden></section>' +
-
       '<div class="order-action-bar"><p class="form-error" id="order-error" role="alert"></p>' +
       '<p class="order-share-status" id="order-share-status" role="status" hidden></p>' +
       '<a class="btn secondary order-whatsapp-link" id="order-whatsapp-link" target="_blank" rel="noopener noreferrer" hidden>Open WhatsApp chat to send order</a>' +
       '<button type="submit" class="btn full wa-btn btn-shimmer" id="send-order">' +
         '<svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
-        '<span id="send-order-label">Review your order</span>' +
+        '<span id="send-order-label">Review &amp; Send Order on WhatsApp</span>' +
         '<span class="wa-pulse"></span>' +
       '</button></div>' +
       '</form></div>';
 
     document.body.classList.add("lock");
     renderSummary();
+    renderLocationStatus(savedMapLink);
 
-    // Address tab switching
-    root.querySelectorAll(".addr-tab").forEach(function(tab) {
-      tab.addEventListener("click", function() {
-        var mode = tab.dataset.addrTab;
-        document.getElementById("cust-address-mode").value = mode;
-        root.querySelectorAll(".addr-tab").forEach(function(t) { t.classList.remove("active"); });
-        tab.classList.add("active");
-        document.getElementById("addr-map-panel").style.display = mode === "map" ? "" : "none";
-        document.getElementById("addr-manual-panel").style.display = mode === "manual" ? "" : "none";
-      });
-    });
-
-    // Get location button
     var locBtn = document.getElementById("get-location-btn");
     if (locBtn) {
       locBtn.addEventListener("click", function() {
-        var status = document.getElementById("location-status");
         if (!navigator.geolocation) {
-          status.textContent = "⚠️ Location not supported on this browser.";
+          var status = document.getElementById("location-status");
+          if (status) status.innerHTML = '<p class="location-error">Location sharing is not supported on this browser. You can enter an address instead.</p>';
           return;
         }
-        status.textContent = "⏳ Getting your location…";
         locBtn.disabled = true;
+        locBtn.textContent = "Getting your location...";
         navigator.geolocation.getCurrentPosition(function(pos) {
-          var lat = pos.coords.latitude.toFixed(6);
-          var lng = pos.coords.longitude.toFixed(6);
-          var link = "https://maps.google.com/?q=" + lat + "," + lng;
+          var latitude = pos.coords.latitude.toFixed(6);
+          var longitude = pos.coords.longitude.toFixed(6);
+          var link = "https://maps.google.com/?q=" + latitude + "," + longitude;
           document.getElementById("cust-map-link").value = link;
-          status.innerHTML = '✅ Location captured! <a href="' + link + '" target="_blank" rel="noopener" style="color:var(--gold-dark);font-weight:600;">View on Maps ↗</a>';
+          document.getElementById("cust-latitude").value = latitude;
+          document.getElementById("cust-longitude").value = longitude;
+          renderLocationStatus(link);
           locBtn.disabled = false;
+          locBtn.textContent = "📍 Share Current Location";
           MH.saveCustomer(readCustomerFromForm());
         }, function() {
-          status.textContent = "⚠️ Location denied. Please type your address instead.";
+          var status = document.getElementById("location-status");
+          if (status) status.innerHTML = '<p class="location-error">Location access was not granted. You can enter a delivery address instead.</p>';
           locBtn.disabled = false;
-        }, { timeout: 10000 });
+          locBtn.textContent = "📍 Share Current Location";
+        }, { timeout: 10000, enableHighAccuracy: false, maximumAge: 60000 });
       });
     }
 
-    // Phone digit-only enforcement
     var phoneInput = document.getElementById("cust-phone");
     if (phoneInput) {
       phoneInput.addEventListener("input", function() {
@@ -516,9 +505,9 @@
         this.value = digits;
         var hint = document.getElementById("phone-hint");
         if (hint) {
-          if (digits.length === 0) hint.textContent = "Enter exactly 10 digits";
+          if (digits.length === 0) hint.textContent = "Enter your 10-digit mobile number";
           else if (digits.length < 10) hint.textContent = digits.length + "/10 digits entered";
-          else hint.textContent = "✅ Valid phone number";
+          else hint.textContent = "Mobile number looks good";
         }
         MH.saveCustomer(readCustomerFromForm());
       });
@@ -528,7 +517,7 @@
       var sheet = root.querySelector(".sheet");
       if (sheet) sheet.scrollTop = 0;
     } else {
-      document.getElementById("cust-name").focus();
+      document.getElementById("cust-store-name").focus();
     }
   }
 
@@ -568,23 +557,19 @@
   }
 
   function readCustomerFromForm() {
-    var mode = (document.getElementById("cust-address-mode") || {}).value || "map";
     var mapLink = (document.getElementById("cust-map-link") || {}).value || "";
-    var shopName = (document.getElementById("cust-shop") || {}).value || "";
-    var street = (document.getElementById("cust-street") || {}).value || "";
-    var landmark = (document.getElementById("cust-landmark") || {}).value || "";
-    // Build a combined address string for backward-compat
-    var manualAddr = [shopName, street, landmark].filter(Boolean).join(", ");
-    var address = mode === "map" ? (mapLink ? "Google Maps: " + mapLink : "") : manualAddr;
+    var address = (document.getElementById("cust-address") || {}).value || "";
     return {
       name: (document.getElementById("cust-name") || {}).value || "",
-      phone: ((document.getElementById("cust-phone") || {}).value || "").replace(/\D/g,"").slice(0,10),
-      address: address,
-      addressMode: mode,
+      phone: ((document.getElementById("cust-phone") || {}).value || "").replace(/\D/g, "").slice(0, 10),
+      address: address.trim(),
+      addressMode: mapLink ? "map" : "manual",
       mapLink: mapLink,
-      shopName: shopName,
-      street: street,
-      landmark: landmark
+      shopName: (document.getElementById("cust-store-name") || {}).value || "",
+      street: "",
+      landmark: "",
+      latitude: (document.getElementById("cust-latitude") || {}).value || "",
+      longitude: (document.getElementById("cust-longitude") || {}).value || ""
     };
   }
 
@@ -609,29 +594,21 @@
     var person = readCustomerFromForm();
     MH.saveCustomer(person);
     var phoneDigits = person.phone.replace(/\D/g, "");
-    // Determine address validity based on mode
-    var mode = person.addressMode || "map";
-    var addressOk = false;
-    if (mode === "map") {
-      addressOk = !!person.mapLink;
-    } else {
-      var manualParts = [person.shopName, person.street, person.landmark].filter(function(s){ return s && s.trim(); });
-      addressOk = manualParts.length >= 1;
+    var addressOk = !!safeMapLink(person.mapLink) || !!person.address.trim();
+    if (!person.shopName.trim()) {
+      error.textContent = "Please enter your store or business name.";
+      return;
     }
     if (!person.name.trim()) {
-      error.textContent = "Please enter your name.";
+      error.textContent = "Please enter the contact person's name.";
       return;
     }
     if (phoneDigits.length !== 10) {
-      error.textContent = "Phone number must be exactly 10 digits.";
+      error.textContent = "Mobile number must be exactly 10 digits.";
       return;
     }
     if (!addressOk) {
-      if (mode === "map") {
-        error.textContent = "Please share your location or switch to 'Type Address'.";
-      } else {
-        error.textContent = "Please enter at least a shop/street address.";
-      }
+      error.textContent = "Please share your location or enter a delivery address.";
       return;
     }
     if (!MH.totals().qty) {
@@ -650,7 +627,7 @@
         orderId: "MH-" + dateId + "-" + String(Math.floor(1000 + Math.random() * 9000)),
         date: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(now),
         time: new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(now),
-        customer: Object.assign({}, person, { address: mode === "manual" ? person.address : "" }),
+        customer: Object.assign({}, person),
         items: totals.items.map(function (item) {
           return { id: item.id, name: item.name, price: item.price, qty: item.qty };
         }),

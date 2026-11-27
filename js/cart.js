@@ -162,8 +162,19 @@
       : clone(DEFAULT_SETTINGS);
     state.cart = cart && typeof cart === "object" && !Array.isArray(cart) ? cart : {};
     state.customer = customer && typeof customer === "object"
-      ? { name: customer.name || "", phone: customer.phone || "", address: customer.address || "" }
-      : { name: "", phone: "", address: "" };
+      ? {
+        name: customer.name || "",
+        phone: customer.phone || "",
+        address: customer.address || "",
+        addressMode: customer.addressMode || (customer.mapLink ? "map" : "manual"),
+        mapLink: customer.mapLink || "",
+        shopName: customer.shopName || "",
+        street: customer.street || "",
+        landmark: customer.landmark || "",
+        latitude: customer.latitude == null ? "" : String(customer.latitude),
+        longitude: customer.longitude == null ? "" : String(customer.longitude)
+      }
+      : { name: "", phone: "", address: "", addressMode: "map", mapLink: "", shopName: "", street: "", landmark: "", latitude: "", longitude: "" };
 
     if (!Array.isArray(products)) writeJSON(KEYS.products, state.products);
     if (!settings) writeJSON(KEYS.settings, state.settings);
@@ -305,9 +316,11 @@
       address: next.address || "",
       addressMode: next.addressMode || "map",
       mapLink: next.mapLink || "",
-      shopName: next.shopName || "",
+      shopName: next.shopName || next.storeName || "",
       street: next.street || "",
-      landmark: next.landmark || ""
+      landmark: next.landmark || "",
+      latitude: next.latitude == null ? "" : String(next.latitude),
+      longitude: next.longitude == null ? "" : String(next.longitude)
     };
     return writeJSON(KEYS.customer, state.customer);
   }
@@ -436,20 +449,34 @@
   function orderMessage(order) {
     var info = order && Array.isArray(order.items) ? order : totals();
     var person = order && order.customer ? order.customer : state.customer;
-    var address = person.addressMode === "manual"
-      ? String(person.address || "").trim()
-      : person.mapLink || String(person.address || "").replace(/^Google Maps:\s*/i, "");
+    var address = String(person.address || "").trim();
+    var mapLink = String(person.mapLink || "").trim();
+    if (/^Google Maps:\s*/i.test(address)) {
+      var legacyMapLink = address.replace(/^Google Maps:\s*/i, "");
+      if (!mapLink || mapLink === legacyMapLink) {
+        mapLink = legacyMapLink;
+        address = "";
+      }
+    }
     var blocks = info.items.map(function (item, index) {
       return (index + 1) + ". " + item.name +
         "\nQty: " + item.qty + " | Price each: " + money(item.price);
     });
+    var delivery = [];
+    if (mapLink) delivery.push("Delivery Location:\nGoogle Maps Link: " + mapLink);
+    if (address) delivery.push("Delivery Address:\n" + address);
     return [
-      "Address: " + (address || "Not provided"),
+      "Store Name: " + String(person.shopName || "").trim(),
+      "Contact Person: " + String(person.name || "").trim(),
+      "Phone: " + String(person.phone || "").trim(),
       "",
-      "Items:",
+      delivery.join("\n\n"),
+      "",
+      "Products:",
       blocks.join("\n\n"),
       "",
-      "Total price: " + money(info.amount)
+      "Total Quantity: " + info.qty,
+      "Total Amount: " + money(info.amount)
     ].join("\n");
   }
 
