@@ -55,13 +55,12 @@
     },
     {
       "id": "p10",
-      "name": "Cara Star ( 5/- )",
+      "name": "Cara Star",
       "price": 120,
       "stock": 7,
-      "category": "Candy",
-      "icon": "⭐",
+      "category": "Chocolate",
       "image": "assets/images/p10.jpg",
-      "description": "Star-shaped sweets, 31 pieces."
+      "description": "Quantity: 30. pcs / Sale Price:  ₹5"
     },
     {
       "id": "p11",
