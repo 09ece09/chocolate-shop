@@ -15,13 +15,13 @@
     },
     {
       "id": "p2",
-      "name": "Pate Labu Chocolate ( 1/- )",
+      "name": "Pate Labu Chocolate",
       "price": 120,
       "stock": 5,
       "category": "Jars",
       "icon": "🍫",
       "image": "assets/images/p2.jpg",
-      "description": "Pumpkin-kissed chocolate, 175 pieces per jar."
+      "description": "Quantity: 150. pcs / Sale Price:  ₹1"
     },
     {
       "id": "p3",
