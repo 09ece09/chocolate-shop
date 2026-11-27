@@ -5,6 +5,7 @@
   var orderOpen = false;
   var orderJustCompleted = false;
   var orderReview = null;
+  var orderShared = false;
 
   function stockClass(stock) {
     if (stock <= 0) return "stock out";
@@ -135,8 +136,18 @@
     var review = document.getElementById("order-review");
     if (!review) return;
     var person = order.customer;
-    var safeMapLink = /^https:\/\/(maps\.google\.com|www\.google\.com\/maps)/i.test(person.mapLink || "")
-      ? person.mapLink
+    var mapLink = person.addressMode === "manual" ? "" : String(person.mapLink || "");
+    var safeMapLink = /^https:\/\/(maps\.google\.com|maps\.app\.goo\.gl|www\.google\.com\/maps)(?:[/?#]|$)/i.test(mapLink)
+      ? mapLink
+      : "";
+    var sharedPrompt = orderShared
+      ? '<div class="order-confirm" role="region" aria-label="Confirm WhatsApp order">' +
+        '<p class="order-confirm-title">Did you send this PDF invoice on WhatsApp?</p>' +
+        '<p class="order-confirm-text">Confirm only after the invoice has been sent to the shop.</p>' +
+        '<div class="order-confirm-actions">' +
+        '<button type="button" class="btn" data-act="confirm-sent">Yes, Order Sent</button>' +
+        '<button type="button" class="btn secondary" data-act="keep-cart">No, Keep in Cart</button>' +
+        '</div></div>'
       : "";
     var items = order.items.map(function (item, index) {
       return '<li class="invoice-item"><span class="invoice-index">' + String(index + 1).padStart(2, "0") + '</span>' +
@@ -145,7 +156,7 @@
     }).join("");
     var address = person.address || (safeMapLink ? "Shared location" : "");
 
-    review.innerHTML =
+    review.innerHTML = sharedPrompt +
       '<div class="invoice-card">' +
         '<div class="invoice-topline"><span>🍫 ' + MH.esc(MH.settings().shopName).toUpperCase() + '</span><span>ORDER INVOICE</span></div>' +
         '<div class="invoice-meta"><span>Order ID</span><strong>' + MH.esc(order.orderId) + '</strong></div>' +
@@ -174,9 +185,298 @@
       '<button class="btn secondary order-edit-btn" type="button" data-act="edit-order">Edit details</button>';
   }
 
+  function pdfText(value) {
+    return String(value == null ? "" : value).replace(/₹/g, "INR ").replace(/[^\x20-\x7E]/g, "?");
+  }
+
+  function pdfMoney(amount) {
+    var currency = MH.settings().currency || "INR";
+    if (currency === "₹") currency = "INR";
+    return pdfText(currency).trim() + " " +
+      new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(Number(amount) || 0);
+  }
+
+  function safeMapLink(value) {
+    var link = String(value || "");
+    return /^https:\/\/(maps\.google\.com|maps\.app\.goo\.gl|www\.google\.com\/maps)(?:[/?#]|$)/i.test(link) ? link : "";
+  }
+
+  function createOrderPdf(order) {
+    var JsPDF = window.jspdf && window.jspdf.jsPDF;
+    if (!JsPDF) throw new Error("The PDF invoice library did not load. Check your connection and refresh.");
+
+    var doc = new JsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+    var margin = 42;
+    var contentWidth = pageWidth - margin * 2;
+    var colors = {
+      chocolate: [45, 27, 20],
+      cocoa: [74, 46, 36],
+      gold: [166, 130, 25],
+      goldLight: [228, 197, 106],
+      cream: [255, 248, 232],
+      paper: [250, 247, 240],
+      ink: [45, 27, 20],
+      muted: [122, 98, 86],
+      line: [225, 216, 203],
+      white: [255, 255, 255]
+    };
+    var y = 0;
+
+    function text(value, x, top, size, color, weight, align) {
+      doc.setFont("helvetica", weight || "normal");
+      doc.setFontSize(size);
+      doc.setTextColor(color[0], color[1], color[2]);
+      var options = align ? { align: align } : {};
+      var safeValue = Array.isArray(value) ? value.map(pdfText) : pdfText(value);
+      doc.text(safeValue, x, top, options);
+    }
+
+    function drawHeader(continued) {
+      doc.setFillColor(colors.chocolate[0], colors.chocolate[1], colors.chocolate[2]);
+      doc.rect(0, 0, pageWidth, continued ? 66 : 132, "F");
+      text("M.H CHOCOLATE SHOP", margin, 46, continued ? 14 : 19, colors.cream, "bold");
+      text(continued ? "ORDER INVOICE - CONTINUED" : "ARTISAN CHOCOLATE HOUSE", margin, 66, 8, colors.goldLight, "normal");
+      text(continued ? order.orderId : "ORDER INVOICE", pageWidth - margin, 46, continued ? 9 : 11, colors.goldLight, "bold", "right");
+      if (!continued) {
+        doc.setFillColor(colors.gold[0], colors.gold[1], colors.gold[2]);
+        doc.roundedRect(margin, 98, 46, 3, 1, 1, "F");
+      }
+    }
+
+    function drawItemsHeader(label) {
+      text(label, margin, y, 9, colors.gold, "bold");
+      y += 12;
+      doc.setFillColor(colors.chocolate[0], colors.chocolate[1], colors.chocolate[2]);
+      doc.roundedRect(margin, y, contentWidth, 27, 5, 5, "F");
+      text("NO.", margin + 12, y + 17, 7, colors.cream, "bold");
+      text("PRODUCT", margin + 42, y + 17, 7, colors.cream, "bold");
+      text("QTY", margin + 268, y + 17, 7, colors.cream, "bold", "right");
+      text("UNIT PRICE", margin + 390, y + 17, 7, colors.cream, "bold", "right");
+      text("SUBTOTAL", pageWidth - margin - 12, y + 17, 7, colors.cream, "bold", "right");
+      y += 27;
+    }
+
+    function addContinuationPage(label) {
+      doc.addPage();
+      drawHeader(true);
+      y = 91;
+      drawItemsHeader(label || "ORDER ITEMS (CONTINUED)");
+    }
+
+    drawHeader(false);
+    doc.setFillColor(colors.paper[0], colors.paper[1], colors.paper[2]);
+    doc.roundedRect(margin, 153, contentWidth, 56, 9, 9, "F");
+    text("ORDER ID", margin + 16, 174, 7, colors.muted, "bold");
+    text(order.orderId, margin + 16, 192, 12, colors.ink, "bold");
+    text("ORDER DATE", margin + 300, 174, 7, colors.muted, "bold");
+    text(order.date + "  " + order.time, margin + 300, 192, 10, colors.ink, "bold");
+
+    var customer = order.customer;
+    var locationUrl = customer.addressMode === "manual" ? "" : safeMapLink(customer.mapLink);
+    var address = customer.address || (locationUrl ? "Shared location" : "Address not provided");
+    var cardY = 226;
+    var gap = 12;
+    var cardWidth = (contentWidth - gap) / 2;
+    var addressLines = doc.splitTextToSize(pdfText(address), cardWidth - 28);
+    var nameLines = doc.splitTextToSize(pdfText(customer.name), cardWidth - 28);
+    var cardHeight = Math.max(108, 55 + Math.max(nameLines.length + 1, addressLines.length + (locationUrl ? 1 : 0)) * 14);
+
+    doc.setDrawColor(colors.line[0], colors.line[1], colors.line[2]);
+    doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
+    doc.roundedRect(margin, cardY, cardWidth, cardHeight, 9, 9, "FD");
+    doc.roundedRect(margin + cardWidth + gap, cardY, cardWidth, cardHeight, 9, 9, "FD");
+    text("CUSTOMER DETAILS", margin + 14, cardY + 22, 8, colors.gold, "bold");
+    text(nameLines, margin + 14, cardY + 45, 10, colors.ink, "bold");
+    text("Phone: " + customer.phone, margin + 14, cardY + 45 + nameLines.length * 14, 9, colors.muted, "normal");
+    text("DELIVERY ADDRESS", margin + cardWidth + gap + 14, cardY + 22, 8, colors.gold, "bold");
+    text(addressLines, margin + cardWidth + gap + 14, cardY + 45, 9, colors.ink, "normal");
+    if (locationUrl) {
+      var linkLabel = "Open delivery location in Google Maps";
+      var linkX = margin + cardWidth + gap + 14;
+      var linkY = cardY + 45 + addressLines.length * 13 + 7;
+      text(linkLabel, linkX, linkY, 8, [45, 95, 150], "bold");
+      doc.link(linkX, linkY - 10, doc.getTextWidth(linkLabel), 13, { url: locationUrl });
+    }
+
+    y = cardY + cardHeight + 24;
+    drawItemsHeader("ORDER ITEMS");
+    order.items.forEach(function (item, index) {
+      var nameLines = doc.splitTextToSize(pdfText(item.name), 200);
+      var rowHeight = Math.max(38, nameLines.length * 13 + 18);
+      if (y + rowHeight > pageHeight - 58) addContinuationPage();
+      if (index % 2 === 0) {
+        doc.setFillColor(colors.paper[0], colors.paper[1], colors.paper[2]);
+        doc.rect(margin, y, contentWidth, rowHeight, "F");
+      }
+      text(String(index + 1).padStart(2, "0"), margin + 12, y + 22, 8, colors.gold, "bold");
+      text(nameLines, margin + 42, y + 20, 9, colors.ink, "bold");
+      text(String(item.qty), margin + 268, y + 22, 9, colors.ink, "normal", "right");
+      text(pdfMoney(item.price), margin + 390, y + 22, 8, colors.muted, "normal", "right");
+      text(pdfMoney(item.qty * item.price), pageWidth - margin - 12, y + 22, 9, colors.ink, "bold", "right");
+      doc.setDrawColor(colors.line[0], colors.line[1], colors.line[2]);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
+      y += rowHeight;
+    });
+
+    if (y + 122 > pageHeight - 50) {
+      doc.addPage();
+      drawHeader(true);
+      y = 96;
+    } else {
+      y += 18;
+    }
+    doc.setFillColor(colors.paper[0], colors.paper[1], colors.paper[2]);
+    doc.roundedRect(margin, y, contentWidth, 112, 9, 9, "F");
+    text("ORDER SUMMARY", margin + 16, y + 23, 8, colors.gold, "bold");
+    text("Total products", margin + 16, y + 45, 9, colors.muted, "normal");
+    text(String(order.items.length), margin + contentWidth - 16, y + 45, 9, colors.ink, "bold", "right");
+    text("Total quantity", margin + 16, y + 63, 9, colors.muted, "normal");
+    text(String(order.qty), margin + contentWidth - 16, y + 63, 9, colors.ink, "bold", "right");
+    doc.setFillColor(colors.chocolate[0], colors.chocolate[1], colors.chocolate[2]);
+    doc.roundedRect(margin + 8, y + 76, contentWidth - 16, 28, 5, 5, "F");
+    text("GRAND TOTAL", margin + 18, y + 95, 8, colors.cream, "bold");
+    text(pdfMoney(order.amount), pageWidth - margin - 18, y + 96, 12, colors.goldLight, "bold", "right");
+
+    var pages = doc.getNumberOfPages();
+    for (var page = 1; page <= pages; page++) {
+      doc.setPage(page);
+      doc.setDrawColor(colors.line[0], colors.line[1], colors.line[2]);
+      doc.setLineWidth(0.6);
+      doc.line(margin, pageHeight - 38, pageWidth - margin, pageHeight - 38);
+      text("M.H Chocolate Shop | Order " + order.orderId, margin, pageHeight - 22, 7, colors.muted, "normal");
+      text("Page " + page + " of " + pages, pageWidth - margin, pageHeight - 22, 7, colors.muted, "normal", "right");
+    }
+    return doc.output("blob");
+  }
+
+  function invoiceShareText(order) {
+    var location = order.customer.addressMode === "manual" ? "" : safeMapLink(order.customer.mapLink);
+    return [
+      "M.H Chocolate Shop order invoice",
+      "Order ID: " + order.orderId,
+      "Grand Total: " + MH.money(order.amount),
+      location ? "Delivery location: " + location : "",
+      "Please find the attached PDF invoice."
+    ].filter(Boolean).join("\n");
+  }
+
+  function fallbackWhatsAppUrl(order) {
+    var digits = String(MH.settings().whatsapp || "").replace(/\D/g, "");
+    return digits
+      ? "https://wa.me/" + digits + "?text=" + encodeURIComponent(invoiceShareText(order))
+      : "";
+  }
+
+  function downloadInvoice(blob, orderId) {
+    var objectUrl = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = orderId + ".pdf";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 1000);
+  }
+
+  function setShareStatus(message, whatsappUrl) {
+    var status = document.getElementById("order-share-status");
+    var whatsappLink = document.getElementById("order-whatsapp-link");
+    if (!status || !whatsappLink) return;
+    status.textContent = message;
+    status.hidden = !message;
+    whatsappLink.hidden = !whatsappUrl;
+    whatsappLink.href = whatsappUrl || "#";
+  }
+
+  function markOrderShared() {
+    orderShared = true;
+    MH.setPendingOrder(true);
+    renderOrderReview(orderReview);
+    var label = document.getElementById("send-order-label");
+    if (label) label.textContent = "Share invoice again";
+  }
+
+  function fallbackInvoiceShare(blob, order, message, error) {
+    try {
+      downloadInvoice(blob, order.orderId);
+      markOrderShared();
+      setShareStatus(message, fallbackWhatsAppUrl(order));
+    } catch (err) {
+      if (error) error.textContent = err.message || "Could not download the invoice PDF.";
+      var label = document.getElementById("send-order-label");
+      if (label) label.textContent = "Share PDF invoice";
+    }
+  }
+
+  function shareOrderInvoice(order, error) {
+    var shareText = invoiceShareText(order);
+    var whatsappUrl = fallbackWhatsAppUrl(order);
+    if (!whatsappUrl) {
+      error.textContent = "The shop WhatsApp number is missing. Ask the shop to set it in admin settings.";
+      return;
+    }
+
+    var pdf;
+    try {
+      pdf = createOrderPdf(order);
+    } catch (err) {
+      error.textContent = err.message || "Could not create the invoice PDF.";
+      return;
+    }
+
+    var file = null;
+    var canShareFiles = false;
+    if (typeof File !== "undefined" && navigator.share && navigator.canShare) {
+      try {
+        file = new File([pdf], order.orderId + ".pdf", { type: "application/pdf" });
+        canShareFiles = navigator.canShare({ files: [file] });
+      } catch (err) {
+        canShareFiles = false;
+      }
+    }
+    if (!canShareFiles) {
+      fallbackInvoiceShare(pdf, order, "Invoice downloaded. Attach the PDF to a WhatsApp message to send it.", error);
+      return;
+    }
+
+    var button = document.getElementById("send-order");
+    var label = document.getElementById("send-order-label");
+    if (button) button.disabled = true;
+    if (label) label.textContent = "Preparing invoice...";
+    var sharePromise;
+    try {
+      sharePromise = navigator.share({
+        title: "M.H Chocolate Shop - " + order.orderId,
+        text: shareText,
+        files: [file]
+      });
+    } catch (err) {
+      if (button) button.disabled = false;
+      fallbackInvoiceShare(pdf, order, "Could not open the share sheet. The PDF was downloaded; attach it in WhatsApp.", error);
+      return;
+    }
+    sharePromise.then(function () {
+      markOrderShared();
+      setShareStatus("Invoice shared. Confirm below after you have sent it to the shop on WhatsApp.", "");
+    }, function (err) {
+      if (err && err.name === "AbortError") {
+        setShareStatus("Sharing cancelled. Your order has not been sent.", "");
+        if (label) label.textContent = "Share PDF invoice";
+      } else {
+        fallbackInvoiceShare(pdf, order, "Could not open the share sheet. The PDF was downloaded; attach it in WhatsApp.", error);
+      }
+    }).then(function () {
+      if (button) button.disabled = false;
+    });
+  }
+
   function openOrder() {
     orderOpen = true;
     orderReview = null;
+    orderShared = false;
     var root = document.getElementById("modal-root");
     var person = MH.customer();
     // Determine saved address mode
@@ -188,7 +488,7 @@
     root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet order-sheet" id="order-form">' +
       '<button type="button" class="close order-close" data-act="close" aria-label="Close order and return to shop">×<span>Close</span></button>' +
       '<p class="eyebrow order-eyebrow"><span class="eyebrow-dot"></span> A little sweetness, made personal</p>' +
-      '<h2>Your order</h2><p class="sheet-lead">Review your basket and delivery details before sending your request. No payment is taken here.</p>' +
+      '<h2>Your order</h2><p class="sheet-lead">Review your basket and delivery details before sharing your invoice PDF. No payment is taken here.</p>' +
       '<div id="order-details-step"><div id="order-summary"></div>' +
 
       // Customer name
@@ -233,6 +533,8 @@
       '<section class="order-review" id="order-review" aria-live="polite" hidden></section>' +
 
       '<div class="order-action-bar"><p class="form-error" id="order-error" role="alert"></p>' +
+      '<p class="order-share-status" id="order-share-status" role="status" hidden></p>' +
+      '<a class="btn secondary order-whatsapp-link" id="order-whatsapp-link" target="_blank" rel="noopener noreferrer" hidden>Open WhatsApp to attach PDF</a>' +
       '<button type="submit" class="btn full wa-btn btn-shimmer" id="send-order">' +
         '<svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
         '<span id="send-order-label">Review your order</span>' +
@@ -309,6 +611,7 @@
     orderOpen = false;
     orderJustCompleted = false;
     orderReview = null;
+    orderShared = false;
     var root = document.getElementById("modal-root");
     root.hidden = true;
     root.innerHTML = "";
@@ -432,21 +735,14 @@
       document.getElementById("order-details-step").hidden = true;
       document.getElementById("order-review").hidden = false;
       renderOrderReview(orderReview);
-      document.getElementById("send-order-label").textContent = "Place order on WhatsApp";
+      document.getElementById("send-order-label").textContent = "Share PDF invoice";
       document.querySelector("#order-modal .sheet").scrollTop = 0;
       error.textContent = "";
       return;
     }
-    var url = MH.whatsappUrl(orderReview);
-    if (!url) {
-      error.textContent = "The shop WhatsApp number is missing. Ask the shop to set it in admin settings.";
-      return;
-    }
     error.textContent = "";
     orderJustCompleted = false;
-    MH.setPendingOrder(true);
-    setTimeout(syncPendingOrderPrompt, 400);
-    window.location.href = url;
+    shareOrderInvoice(orderReview, error);
   }
 
   function onClick(event) {
@@ -468,14 +764,22 @@
       document.getElementById("order-review").hidden = true;
       document.getElementById("send-order-label").textContent = "Review your order";
       document.getElementById("order-error").textContent = "";
+      setShareStatus("", "");
     }
     else if (act === "confirm-sent") {
       orderJustCompleted = true;
+      orderShared = false;
+      orderReview = null;
       MH.completeOrder();
+      closeOrder();
       refreshAll();
     } else if (act === "keep-cart") {
+      orderShared = false;
       MH.setPendingOrder(false);
       refreshAll();
+      if (orderReview) renderOrderReview(orderReview);
+      document.getElementById("send-order-label").textContent = "Share PDF invoice";
+      setShareStatus("Your cart is unchanged. The invoice is still available to share.", "");
     } else if (button.dataset.id) changeQty(act, button.dataset.id);
   }
 

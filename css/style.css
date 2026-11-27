@@ -1393,6 +1393,13 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .order-action-bar .form-error { margin-bottom: 6px; }
 .order-action-bar .btn { min-height: 52px; }
+.order-share-status {
+  margin: 0 0 8px;
+  color: var(--choc-mid);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.order-action-bar .order-whatsapp-link { display: flex; width: 100%; margin-bottom: 8px; }
 @keyframes order-sheet-enter {
   from { opacity: 0; transform: translateY(24px) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
