@@ -64,13 +64,13 @@
     },
     {
       "id": "p11",
-      "name": "Choco Moco ( 5/- )",
+      "name": "Choco Moco",
       "price": 120,
       "stock": 26,
       "category": "Chocolate",
       "icon": "🍫",
       "image": "assets/images/p11.jpg",
-      "description": "Rich cocoa chocolate."
+      "description": "Quantity: 30. pcs / Sale Price:  ₹5"
     },
     {
       "id": "p1795707389846",
