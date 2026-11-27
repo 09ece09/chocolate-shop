@@ -44,26 +44,6 @@
       "description": "Quantity: 150. pcs / Sale Price:  ₹1"
     },
     {
-      "id": "p6",
-      "name": "Mint Fresh",
-      "price": 120,
-      "stock": 5,
-      "category": "Candy",
-      "icon": "🌿",
-      "image": "assets/images/p6.jpg",
-      "description": "Cool mint chocolates, 100 pieces."
-    },
-    {
-      "id": "p7",
-      "name": "Tik Tik",
-      "price": 150,
-      "stock": 5,
-      "category": "Minto White",
-      "icon": "🍬",
-      "image": "assets/images/p7.jpg",
-      "description": "Crunchy bite-size chocolates, 100 pieces."
-    },
-    {
       "id": "p8",
       "name": "Fan + Candy ( 5/- )",
       "price": 45,
