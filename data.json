@@ -85,13 +85,13 @@
     },
     {
       "id": "p9",
-      "name": "Dairy Roll (5/-)",
+      "name": "Dairy Roll",
       "price": 120,
       "stock": 15,
       "category": "Bars",
       "icon": "🍫",
       "image": "assets/images/p9.jpg",
-      "description": "Chocolate flavoured wafer rolls."
+      "description": "Dairy Roll প্যাকেটে থাকছে 30টি পিস। প্রতিটি পিসের দাম 5/- টাকা।"
     },
     {
       "id": "p10",
