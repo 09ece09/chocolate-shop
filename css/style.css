@@ -1291,6 +1291,21 @@ button, input, textarea { font: inherit; color: inherit; }
   background: linear-gradient(145deg, rgba(255,255,255,0.88), rgba(255,248,232,0.88));
   box-shadow: 0 14px 34px rgba(45,27,20,0.08);
 }
+.order-pdf-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 12px 0 4px;
+}
+.order-pdf-actions .btn {
+  min-width: 0;
+  min-height: 46px;
+  padding: 10px 8px;
+  font-size: 0.8rem;
+  text-align: center;
+  text-decoration: none;
+}
+.order-pdf-error { margin: 12px 0; color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
 .invoice-card::before {
   position: absolute;
   inset: 0 0 auto;
