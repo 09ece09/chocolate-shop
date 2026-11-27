@@ -455,55 +455,54 @@
       ? ""
       : person.mapLink || String(person.address || "").replace(/^Google Maps:\s*/i, "");
     var blocks = info.items.map(function (item, index) {
-      return (index + 1) + "️⃣ " + item.name +
+      return (index + 1) + ". " + item.name +
         "\nQty: " + item.qty +
         "\nUnit Price: " + money(item.price) +
         "\nSubtotal: " + money(item.qty * item.price);
     });
     return [
-      "🍫 " + shop.toUpperCase(),
-      "━━━━━━━━━━━━━━",
+      "*" + shop.toUpperCase() + "*",
+      "================================",
       "",
-      "🧾 ORDER REQUEST",
+      "*ORDER REQUEST*",
       "",
       "Order ID: " + orderId,
       "Order Date: " + date,
       "Order Time: " + time,
       "",
-      "👤 CUSTOMER",
+      "*CUSTOMER*",
       "",
       "Name: " + String(person.name || "").trim(),
       "Phone: " + String(person.phone || "").trim(),
       "",
-      "📍 DELIVERY",
+      "*DELIVERY*",
       "",
       "Address: " + (address || "Not provided"),
       "",
-      "📌 Location",
+      "*LOCATION*",
       location || "Not shared",
       "",
-      "━━━━━━━━━━━━━━",
+      "================================",
       "",
-      "🛒 ITEMS",
+      "*ITEMS*",
       "",
       blocks.join("\n\n"),
       "",
-      "━━━━━━━━━━━━━━",
+      "================================",
       "",
-      "📊 SUMMARY",
+      "*SUMMARY*",
       "",
       "Total Products: " + info.items.length,
       "Total Quantity: " + info.qty,
       "Grand Total: " + money(info.amount),
       "",
-      "━━━━━━━━━━━━━━",
+      "================================",
       "",
-      "✅ Please confirm stock availability and expected delivery date.",
+      "*Please confirm stock availability and expected delivery date.*",
       "",
       "Thank you for your service.",
       "",
-      "Sent from:",
-      "🌐 MH Chocolate Shop Website"
+      "Sent from: MH Chocolate Shop Website"
     ].join("\n");
   }
 
