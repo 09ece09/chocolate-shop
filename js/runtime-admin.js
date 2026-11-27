@@ -50,6 +50,23 @@
     return new TextDecoder().decode(bytes);
   }
 
+  function readGitHubData(filePath, meta) {
+    if (typeof meta.content === "string" && meta.content.trim()) {
+      return Promise.resolve(JSON.parse(decodeBase64Utf8(meta.content)));
+    }
+    return ghApi(filePath, { headers: { "Accept": "application/vnd.github.raw+json" } }).then(function (res) {
+      if (!res.ok) throw new Error("GitHub file read failed (" + res.status + ")");
+      return res.text();
+    }).then(function (text) {
+      if (!text.trim()) throw new Error("GitHub returned an empty Data.json file.");
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        throw new Error("Data.json in GitHub is not valid JSON.");
+      }
+    });
+  }
+
   function encodeBase64Utf8(text) {
     var bytes = new TextEncoder().encode(text);
     var bin = "";
@@ -65,13 +82,21 @@
     return ghApi(preferred).then(function (res) {
       if (res.ok) {
         localStorage.setItem(GH_FILE_KEY, preferred);
-        return res.json().then(function (meta) { return { file: preferred, meta: meta }; });
+        return res.json().then(function (meta) {
+          return readGitHubData(preferred, meta).then(function (data) {
+            return { file: preferred, meta: meta, data: data };
+          });
+        });
       }
       if (res.status === 404) {
         return ghApi(fallback).then(function (res2) {
           if (!res2.ok) throw new Error("GitHub returned " + res2.status);
           localStorage.setItem(GH_FILE_KEY, fallback);
-          return res2.json().then(function (meta) { return { file: fallback, meta: meta }; });
+          return res2.json().then(function (meta) {
+            return readGitHubData(fallback, meta).then(function (data) {
+              return { file: fallback, meta: meta, data: data };
+            });
+          });
         });
       }
       throw new Error("GitHub returned " + res.status);
@@ -519,8 +544,7 @@
       localStorage.setItem(GH_REPO_KEY, repo);
       ghErr.textContent = "Connecting to GitHub...";
       fetchGitHubData().then(function (res) {
-        var decoded = JSON.parse(decodeBase64Utf8(res.meta.content));
-        MH.applyData(decoded, { dirty: false, source: res.file });
+        MH.applyData(res.data, { dirty: false, source: res.file });
         closeModal();
         setStatus("Connected to GitHub (" + res.file + ")", false);
         refreshUI();
