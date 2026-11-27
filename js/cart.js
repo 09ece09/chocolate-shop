@@ -434,75 +434,22 @@
   }
 
   function orderMessage(order) {
-    var now = new Date();
     var info = order && Array.isArray(order.items) ? order : totals();
-    var shop = state.settings.shopName || DEFAULT_SETTINGS.shopName;
     var person = order && order.customer ? order.customer : state.customer;
-    var date = order && order.date || new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit", month: "short", year: "numeric"
-    }).format(now);
-    var time = order && order.time || new Intl.DateTimeFormat("en-US", {
-      hour: "numeric", minute: "2-digit"
-    }).format(now);
-    var dateId = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, "0"),
-      String(now.getDate()).padStart(2, "0")
-    ].join("");
-    var orderId = order && order.orderId || "MH-" + dateId + "-" + String(Math.floor(1000 + Math.random() * 9000));
-    var address = person.addressMode === "manual" ? person.address.trim() : "Shared Google Maps location";
-    var location = person.addressMode === "manual"
-      ? ""
+    var address = person.addressMode === "manual"
+      ? String(person.address || "").trim()
       : person.mapLink || String(person.address || "").replace(/^Google Maps:\s*/i, "");
     var blocks = info.items.map(function (item, index) {
       return (index + 1) + ". " + item.name +
-        "\nQty: " + item.qty +
-        "\nUnit Price: " + money(item.price) +
-        "\nSubtotal: " + money(item.qty * item.price);
+        "\nQty: " + item.qty + " | Price each: " + money(item.price);
     });
     return [
-      "*" + shop.toUpperCase() + "*",
-      "================================",
-      "",
-      "*ORDER REQUEST*",
-      "",
-      "Order ID: " + orderId,
-      "Order Date: " + date,
-      "Order Time: " + time,
-      "",
-      "*CUSTOMER*",
-      "",
-      "Name: " + String(person.name || "").trim(),
-      "Phone: " + String(person.phone || "").trim(),
-      "",
-      "*DELIVERY*",
-      "",
       "Address: " + (address || "Not provided"),
       "",
-      "*LOCATION*",
-      location || "Not shared",
-      "",
-      "================================",
-      "",
-      "*ITEMS*",
-      "",
+      "Items:",
       blocks.join("\n\n"),
       "",
-      "================================",
-      "",
-      "*SUMMARY*",
-      "",
-      "Total Products: " + info.items.length,
-      "Total Quantity: " + info.qty,
-      "Grand Total: " + money(info.amount),
-      "",
-      "================================",
-      "",
-      "*Please confirm stock availability and expected delivery date.*",
-      "",
-      "Thank you for your service.",
-      "",
-      "Sent from: MH Chocolate Shop Website"
+      "Total price: " + money(info.amount)
     ].join("\n");
   }
 
