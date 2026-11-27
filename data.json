@@ -5,13 +5,13 @@
   "products": [
     {
       "id": "p1",
-      "name": "Tok Jhal Chocolate ( 1/- )",
+      "name": "Tok Jhal Chocolate",
       "price": 120,
       "stock": 5,
-      "category": "Jars",
+      "category": "Chocolate",
       "icon": "🍫",
       "image": "assets/images/p1.jpg",
-      "description": "Spiced chocolate bites, packed 150 pieces to a jar."
+      "description": "Quantity: 150. pcs\nSale Price:  ₹1"
     },
     {
       "id": "p2",
