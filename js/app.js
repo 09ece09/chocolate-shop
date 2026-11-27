@@ -186,7 +186,7 @@
 
     root.hidden = false;
     root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet order-sheet" id="order-form">' +
-      '<button type="button" class="close" data-act="close" aria-label="Close">×</button>' +
+      '<button type="button" class="close order-close" data-act="close" aria-label="Close order and return to shop">×<span>Close</span></button>' +
       '<p class="eyebrow order-eyebrow"><span class="eyebrow-dot"></span> A little sweetness, made personal</p>' +
       '<h2>Your order</h2><p class="sheet-lead">Review your basket and delivery details before sending your request. No payment is taken here.</p>' +
       '<div id="order-details-step"><div id="order-summary"></div>' +
