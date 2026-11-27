@@ -20,6 +20,18 @@
     return "In stock: " + stock;
   }
 
+  function categoryLabel(name) {
+    var labels = {
+      All: "All Products",
+      Bars: "Chocolate Bars",
+      Candy: "Candy",
+      Chocolate: "Chocolate",
+      Jars: "Chocolate Jars",
+      Jelly: "Jelly"
+    };
+    return labels[name] || name;
+  }
+
   function visibleProducts() {
     var q = query.trim().toLowerCase();
     return MH.products().filter(function (product) {
@@ -43,7 +55,7 @@
     if (cats.indexOf(category) === -1) category = "All";
     document.getElementById("cats").innerHTML = cats.map(function (name) {
       var pressed = name === category ? "true" : "false";
-      return '<button type="button" class="chip" data-cat="' + MH.esc(name) + '" aria-pressed="' + pressed + '">' + MH.esc(name) + "</button>";
+      return '<button type="button" class="chip" data-cat="' + MH.esc(name) + '" aria-pressed="' + pressed + '">' + MH.esc(categoryLabel(name)) + "</button>";
     }).join("");
   }
 
@@ -54,7 +66,7 @@
     var fallbackLabel = product.icon || "MH";
     var media = src
       ? '<img src="' + MH.esc(src) + '" alt="' + MH.esc(product.name) + '" data-fallback="' + MH.esc(fallbackLabel) + '" loading="lazy" decoding="async">'
-      : '<div class="ph" role="img" aria-label="Product photo">' + MH.esc(fallbackLabel) + "</div>";
+      : '<div class="ph" role="img" aria-label="Product image">' + MH.esc(fallbackLabel) + "</div>";
     var controls = qty > 0
       ? '<div class="qty"><div class="stepper"><button type="button" data-act="dec" data-id="' + MH.esc(product.id) + '" aria-label="Decrease quantity">−</button><b>' + qty + '</b><button type="button" data-act="inc" data-id="' + MH.esc(product.id) + '" aria-label="Increase quantity"' + (qty >= stock ? " disabled" : "") + '>+</button></div><button type="button" class="linkish" data-act="remove" data-id="' + MH.esc(product.id) + '">Remove</button></div>'
       : "";
@@ -68,7 +80,7 @@
         "</div>"
       : "";
     return '<article class="card" style="animation-delay:' + Math.min(index, 8) * 40 + 'ms">' +
-      '<div class="card-media">' + media + '<span class="pill">' + MH.esc(product.category || "Sweet") + "</span></div>" +
+      '<div class="card-media">' + media + '<span class="pill">' + MH.esc(categoryLabel(product.category || "Sweet")) + "</span></div>" +
       '<div class="card-body"><h3>' + MH.esc(product.name) + "</h3>" +
       (product.description ? '<p class="desc">' + MH.esc(product.description) + "</p>" : "") +
       '<div class="meta"><span class="price">' + MH.esc(MH.money(product.price)) + '</span><span class="' + stockClass(stock) + '">' + stockLabel(stock) + "</span></div>" +
@@ -83,12 +95,12 @@
     document.getElementById("result-count").textContent = list.length + (list.length === 1 ? " product" : " products");
     grid.innerHTML = list.length
       ? list.map(card).join("")
-      : '<p class="empty">Nothing on the shelf matches that search.</p>';
+      : '<p class="empty">No products match your search. Try another term or category.</p>';
   }
 
   function renderChrome() {
     var shop = MH.settings().shopName || "M.H Chocolate Shop";
-    document.title = shop;
+    document.title = shop + " — Premium Wholesale Chocolate";
     document.querySelectorAll("[data-shop]").forEach(function (node) { node.textContent = shop; });
     var shelf = document.getElementById("shelf-count");
     if (shelf) shelf.textContent = String(MH.products().length);

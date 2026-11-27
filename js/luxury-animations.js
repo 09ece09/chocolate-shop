@@ -1,8 +1,5 @@
 /**
- * M.H Chocolate Shop — Luxury Animations v2
- * Pure vanilla JS + GSAP (loaded via CDN, no build step needed).
- * Falls back gracefully if GSAP hasn't loaded (GitHub Pages CDN latency).
- * All 3D parallax / tilt logic lives here, keeping cart.js / app.js untouched.
+ * M.H Chocolate Shop — lightweight storefront interactions and motion.
  */
 (function () {
   'use strict';
@@ -296,14 +293,12 @@
     if (prefersReduced || isMobile) return;
 
     var hero = document.getElementById('hero');
-    if (!hero) return;
+    var stage = document.getElementById('hero-stage');
+    if (!hero || !stage) return;
 
     function onScroll() {
       var sy = window.scrollY;
-      var stage = document.getElementById('hero-stage');
-      if (stage) {
-        stage.style.transform = 'translateY(' + (sy * -0.055) + 'px)';
-      }
+      stage.style.transform = 'translateY(' + (sy * -0.055) + 'px)';
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -425,19 +420,5 @@
   } else {
     init();
   }
-
-  /* ── Expose openOrder for WA CTA button ─────────────── */
-  // Patch MHStorefront to expose openOrder when app.js sets it up
-  window.addEventListener('DOMContentLoaded', function () {
-    // app.js sets window.MHStorefront = { refresh }
-    // We wire openOrder via the existing button IDs
-    var heroOrder = document.getElementById('hero-order');
-    if (heroOrder) {
-      heroOrder.addEventListener('click', function () {
-        var viewOrder = document.getElementById('view-order');
-        if (viewOrder) viewOrder.click();
-      });
-    }
-  });
 
 })();
