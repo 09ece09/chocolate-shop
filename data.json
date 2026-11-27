@@ -35,13 +35,13 @@
     },
     {
       "id": "p4",
-      "name": "Frutle Jelly Chocolate ( 1/- )",
+      "name": "Frutle Jelly Chocolate",
       "price": 120,
       "stock": 5,
       "category": "Jelly",
       "icon": "🪼",
       "image": "assets/images/p4.jpg",
-      "description": "Fruit jelly centers wrapped in chocolate, 150 pieces."
+      "description": "Quantity: 150. pcs / Sale Price:  ₹1"
     },
     {
       "id": "p5",
