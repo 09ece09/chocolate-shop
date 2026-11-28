@@ -15,10 +15,10 @@
     },
     {
       "id": "p2",
-      "name": "Pate Labu Chocolate",
+      "name": "Pate Labu",
       "price": 120,
       "stock": 1,
-      "category": "Jars",
+      "category": "Chocolate",
       "icon": "🍫",
       "image": "assets/images/p2.jpg",
       "description": "Quantity: 150. pcs / Sale Price:  ₹1"
