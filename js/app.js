@@ -3,6 +3,7 @@
   var query = "";
   var category = "All";
   var orderOpen = false;
+  var orderStep = "cart";
   var orderJustCompleted = false;
   var orderReview = null;
   var orderShared = false;
@@ -107,13 +108,26 @@
     var info = MH.totals();
     document.getElementById("cart-count").textContent = String(info.qty);
     document.getElementById("float-count").textContent = String(info.qty);
+    document.getElementById("float-total").textContent = MH.money(info.amount);
     document.getElementById("cart-count").hidden = info.qty === 0;
+    document.getElementById("float-cart").setAttribute(
+      "aria-label",
+      "Continue order: " + info.qty + (info.qty === 1 ? " item" : " items") + ", total " + MH.money(info.amount)
+    );
   }
 
   function renderSummary() {
     var box = document.getElementById("order-summary");
     if (!box) return;
     var info = MH.totals();
+    var stickySummary = document.getElementById("order-sticky-summary");
+    if (stickySummary) {
+      stickySummary.hidden = info.qty === 0;
+      stickySummary.innerHTML = '<div><span>' + (orderStep === "review" || orderReview ? "Items" : "Total items") + '</span><strong>' + info.qty + '</strong></div>' +
+        '<div class="sticky-total"><span>Total</span><strong>' + MH.esc(MH.money(info.amount)) + '</strong></div>';
+    }
+    var continueButton = document.getElementById("continue-to-review");
+    if (continueButton) continueButton.disabled = info.qty === 0;
     if (!info.qty) {
       if (orderJustCompleted) {
         var shop = MH.settings().shopName || "M.H Chocolate Shop";
@@ -135,13 +149,22 @@
         '</div></div>'
       : "";
     var rows = info.items.map(function (item) {
-      return '<div class="line"><div><b>' + MH.esc(item.name) + '</b><div class="stock">' + MH.esc(MH.money(item.price)) + ' each</div></div>' +
-        '<div class="line-actions"><div class="stepper"><button type="button" data-act="dec" data-id="' + MH.esc(item.id) + '" aria-label="Decrease quantity">−</button><b>' + item.qty + '</b><button type="button" data-act="inc" data-id="' + MH.esc(item.id) + '" aria-label="Increase quantity"' + (item.qty >= item.stock ? " disabled" : "") + '>+</button></div>' +
-        '<b>' + MH.esc(MH.money(item.qty * item.price)) + '</b><button type="button" class="linkish" data-act="remove" data-id="' + MH.esc(item.id) + '">Remove</button></div></div>';
+      var src = MH.safeSrc(item.image);
+      var image = src
+        ? '<img class="cart-thumb" src="' + MH.esc(src) + '" alt="' + MH.esc(item.name) + '" loading="lazy" decoding="async">'
+        : '<span class="cart-thumb cart-thumb-fallback" aria-hidden="true">🍫</span>';
+      return '<article class="cart-line" data-cart-item="' + MH.esc(item.id) + '">' + image +
+        '<div class="cart-line-content"><div class="cart-item-copy"><b>' + MH.esc(item.name) + '</b><span>' + MH.esc(MH.money(item.price)) + ' each</span></div>' +
+        '<div class="cart-line-actions"><div class="cart-stepper">' +
+        '<button type="button" data-act="dec" data-id="' + MH.esc(item.id) + '" aria-label="Decrease quantity of ' + MH.esc(item.name) + '">−</button>' +
+        '<b class="cart-quantity" aria-live="polite">' + item.qty + '</b>' +
+        '<button type="button" data-act="inc" data-id="' + MH.esc(item.id) + '" aria-label="Increase quantity of ' + MH.esc(item.name) + '"' + (item.qty >= item.stock ? " disabled" : "") + '>+</button>' +
+        '</div><b class="cart-line-total">' + MH.esc(MH.money(item.qty * item.price)) + '</b>' +
+        '<button type="button" class="cart-remove" data-act="remove" data-id="' + MH.esc(item.id) + '" aria-label="Remove ' + MH.esc(item.name) + ' from cart">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 4v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</button></div></div></article>';
     }).join("");
-    box.innerHTML = pendingHtml + rows +
-      '<div class="totals"><span>Total quantity</span><span>' + info.qty + "</span></div>" +
-      '<div class="totals grand"><span>Total amount</span><span>' + MH.esc(MH.money(info.amount)) + "</span></div>";
+    box.innerHTML = pendingHtml + '<div class="cart-lines">' + rows + '</div>';
     var send = document.getElementById("send-order");
     if (send) send.disabled = false;
   }
@@ -160,46 +183,57 @@
         '<button type="button" class="btn secondary" data-act="keep-cart">No, Keep in Cart</button>' +
         '</div></div>'
       : "";
-    var items = order.items.map(function (item, index) {
-      return '<li class="invoice-item"><span class="invoice-index">' + String(index + 1).padStart(2, "0") + '</span>' +
-        '<div class="invoice-item-copy"><strong>' + MH.esc(item.name) + '</strong><span>Qty ' + item.qty + ' · ' + MH.esc(MH.money(item.price)) + ' each</span></div>' +
-        '<strong class="invoice-subtotal">' + MH.esc(MH.money(item.qty * item.price)) + '</strong></li>';
-    }).join("");
     var address = person.address || (mapUrl ? "Shared location" : "");
+    var addressLines = address.split(/\r?\n/).filter(Boolean).map(function (line) {
+      return '<span>' + MH.esc(line) + '</span>';
+    }).join("");
 
     review.innerHTML = sharedPrompt +
-      '<div class="invoice-card">' +
-        '<div class="invoice-topline"><span>🍫 ' + MH.esc(MH.settings().shopName).toUpperCase() + '</span><span>ORDER INVOICE</span></div>' +
-        '<div class="invoice-meta"><span>Order ID</span><strong>' + MH.esc(order.orderId) + '</strong></div>' +
-        '<div class="invoice-datetime"><span>' + MH.esc(order.date) + '</span><span>' + MH.esc(order.time) + '</span></div>' +
-        '<div class="invoice-section"><h3>Store / contact details</h3>' +
-          '<p><strong>' + MH.esc(person.shopName || "Store") + '</strong><span>Contact: ' + MH.esc(person.name) + '</span><span>Phone: ' + MH.esc(person.phone) + '</span></p></div>' +
-        '<div class="invoice-section"><h3>Delivery information</h3>' +
-          '<p>' + (address ? '<span>Address: ' + MH.esc(address) + '</span>' : '') +
-            (mapUrl ? '<a href="' + MH.esc(mapUrl) + '" target="_blank" rel="noopener noreferrer">Open location ↗</a>' : '') +
-          '</p></div>' +
-        '<div class="invoice-section invoice-items-section"><h3>Order items</h3><ol class="invoice-items">' + items + '</ol></div>' +
-        '<div class="invoice-totals"><p><span>Total products</span><strong>' + order.items.length + '</strong></p>' +
-          '<p><span>Total quantity</span><strong>' + order.qty + '</strong></p>' +
-          '<p class="invoice-grand"><span>Total amount</span><strong>' + MH.esc(MH.money(order.amount)) + '</strong></p></div>' +
-      '</div>' +
+      '<header class="review-invoice-header">' +
+        '<div class="review-invoice-brand"><span aria-hidden="true">🏪</span><strong>' + MH.esc(MH.settings().shopName) + '</strong></div>' +
+        '<strong class="review-order-id">#' + MH.esc(order.orderId) + '</strong>' +
+        '<p>' + MH.esc(order.date) + ' <span aria-hidden="true">·</span> ' + MH.esc(order.time) + '</p>' +
+      '</header>' +
+      '<section class="review-contact-card" aria-label="Customer contact details">' +
+        '<div><span>👤 Customer</span><strong>' + MH.esc(person.name) + '</strong></div>' +
+        '<div><span>📞 Phone</span><strong>' + MH.esc(person.phone) + '</strong></div>' +
+      '</section>' +
+      '<section class="review-location-card" aria-label="Delivery location">' +
+        '<div class="review-location-heading"><strong><span aria-hidden="true">📍</span> Delivery location</strong>' +
+          '<span class="review-location-badge ' + (mapUrl ? "is-verified" : "") + '">' +
+            (mapUrl ? "● Location verified" : "Address provided") + '</span></div>' +
+        '<p class="review-location-address"><span aria-hidden="true">🏠</span><span>' +
+          (addressLines || '<span>Delivery address not provided</span>') + '</span></p>' +
+        (mapUrl ? '<a class="review-location-view" href="' + MH.esc(mapUrl) + '" target="_blank" rel="noopener noreferrer">View location <span aria-hidden="true">↗</span></a>' : '') +
+      '</section>' +
         (orderPdfUrl
           ? '<div class="order-pdf-actions">' +
             '<a id="view-order-pdf" class="btn secondary" href="' + MH.esc(orderPdfUrl) + '" target="_blank" rel="noopener noreferrer">View PDF</a>' +
             '<a id="download-order-pdf" class="btn secondary" href="' + MH.esc(orderPdfUrl) + '" download="' + MH.esc(order.orderId) + '.pdf">Download PDF</a>' +
             '</div>'
           : '<p class="order-pdf-error" role="status">' + MH.esc(orderPdfError || "PDF preview is unavailable. You can still send the order on WhatsApp.") + '</p>') +
-      '<ul class="order-checklist" aria-label="Order details confirmed">' +
-        '<li><span aria-hidden="true">✓</span> Business details</li>' +
-        '<li><span aria-hidden="true">✓</span> Delivery address</li>' +
-        '<li><span aria-hidden="true">✓</span> Order items</li>' +
-        '<li><span aria-hidden="true">✓</span> Total amount</li>' +
-      '</ul>' +
-      '<div class="order-trust-grid" aria-label="Shop assurances">' +
-        '<span>📦 Bulk orders supported</span><span>⚡ Fast confirmation</span>' +
-        '<span>🔒 Secure ordering</span><span>💬 WhatsApp updates</span>' +
-      '</div>' +
       '<button class="btn secondary order-edit-btn" type="button" data-act="edit-order">Edit details</button>';
+  }
+
+  function orderItemMarkup(items) {
+    return items.map(function (item) {
+      var src = MH.safeSrc(item.image);
+      var image = src
+        ? '<img class="cart-thumb" src="' + MH.esc(src) + '" alt="' + MH.esc(item.name) + '" loading="lazy" decoding="async">'
+        : '<span class="cart-thumb cart-thumb-fallback" aria-hidden="true">🍫</span>';
+      return '<article class="cart-line review-order-item">' + image +
+        '<div class="cart-line-content"><div class="cart-item-copy"><b>' + MH.esc(item.name) + '</b></div>' +
+        '<div class="review-item-details"><span>Qty ' + item.qty + ' × ' + MH.esc(MH.money(item.price)) + '</span>' +
+        '<strong>' + MH.esc(MH.money(item.qty * item.price)) + '</strong></div></div></article>';
+    }).join("");
+  }
+
+  function renderOrderItemReview() {
+    var items = MH.totals().items;
+    var list = document.getElementById("order-item-review-list");
+    var count = document.getElementById("order-item-review-count");
+    if (list) list.innerHTML = orderItemMarkup(items);
+    if (count) count.textContent = String(items.length);
   }
 
   function pdfText(value) {
@@ -297,7 +331,7 @@
     doc.setDrawColor(colors.line[0], colors.line[1], colors.line[2]);
     doc.setFillColor(colors.white[0], colors.white[1], colors.white[2]);
     doc.roundedRect(margin, y, contentWidth, customerHeight, 7, 7, "FD");
-    text("STORE / CONTACT", margin + 12, y + 16, 8, colors.gold, "bold");
+    text("SHOP / CUSTOMER", margin + 12, y + 16, 8, colors.gold, "bold");
     text(storeNameLines, margin + 12, y + 32, 9, colors.ink, "bold");
     text(contactLines, margin + 12, y + 32 + storeNameLines.length * 12, 8, colors.muted, "normal");
     text("Phone: " + customer.phone, margin + 12, y + 32 + storeNameLines.length * 12 + contactLines.length * 11, 8, colors.muted, "normal");
@@ -418,8 +452,49 @@
       : '<p class="location-help">Share a map location for faster delivery. Address is optional when location is shared.</p>';
   }
 
+  function addressFieldsFromCustomer(person, savedAddress) {
+    var fields = {
+      area: String(person.street || ""),
+      landmark: String(person.landmark || ""),
+      town: "",
+      pin: ""
+    };
+    var labels = {
+      "area/market": "area",
+      "area": "area",
+      "road/landmark": "landmark",
+      "landmark": "landmark",
+      "road": "landmark",
+      "town": "town",
+      "pin code": "pin",
+      "pin": "pin",
+      "pincode": "pin"
+    };
+    var foundLabel = false;
+    String(savedAddress || "").split(/\r?\n/).forEach(function (line) {
+      var match = line.match(/^\s*([^:]+):\s*(.*?)\s*$/);
+      if (!match) return;
+      var key = match[1].trim().toLowerCase();
+      if (!labels[key]) return;
+      fields[labels[key]] = match[2];
+      foundLabel = true;
+    });
+    if (!foundLabel && !fields.area) fields.area = String(savedAddress || "");
+    return fields;
+  }
+
+  function composeDeliveryAddress(fields) {
+    return [
+      fields.area && "Area/Market: " + fields.area.trim(),
+      fields.landmark && "Landmark: " + fields.landmark.trim(),
+      fields.town && "Town: " + fields.town.trim(),
+      fields.pin && "PIN Code: " + fields.pin.trim()
+    ].filter(Boolean).join("\n");
+  }
+
   function openOrder() {
     orderOpen = true;
+    orderStep = "cart";
     orderReview = null;
     orderShared = false;
     var root = document.getElementById("modal-root");
@@ -427,18 +502,22 @@
     var savedMapLink = safeMapLink(person.mapLink);
     var savedAddress = String(person.address || "");
     if (savedMapLink && savedAddress === "Google Maps: " + savedMapLink) savedAddress = "";
+    var addressFields = addressFieldsFromCustomer(person, savedAddress);
 
     root.hidden = false;
     root.innerHTML = '<div class="modal" id="order-modal"><form class="sheet order-sheet" id="order-form">' +
       '<button type="button" class="close order-close" data-act="close" aria-label="Close order and return to shop">×<span>Close</span></button>' +
       '<p class="eyebrow order-eyebrow"><span class="eyebrow-dot"></span> WHOLESALE CHECKOUT</p>' +
-      '<h2>Delivery details</h2><p class="sheet-lead">Tell us where to deliver your bulk order. Share a location or enter an address.</p>' +
-      '<div id="order-details-step"><div id="order-summary"></div>' +
+      '<h2 id="checkout-step-title">Your order</h2><p class="sheet-lead" id="checkout-step-lead">Review your items before adding delivery details.</p>' +
+      '<div id="order-details-step"><div id="order-cart-step"><div id="order-summary"></div></div>' +
+      '<div id="order-item-review-step" hidden><section class="review-items-section" aria-label="Review order items">' +
+        '<h3>Order items <span id="order-item-review-count">0</span></h3><div class="review-items" id="order-item-review-list"></div>' +
+      '</section></div><div id="order-delivery-step" hidden>' +
       '<section class="delivery-card business-details-card" aria-labelledby="delivery-info-title">' +
-        '<div class="delivery-section-heading"><span class="delivery-section-icon">01</span><div><h3 id="delivery-info-title">Delivery Information</h3><p>Business and contact details for order confirmation.</p></div></div>' +
+        '<div class="delivery-section-heading"><span class="delivery-section-icon">01</span><div><h3 id="delivery-info-title">Delivery Information</h3><p>Shop and customer details for order confirmation.</p></div></div>' +
         '<div class="delivery-fields-grid">' +
-          '<label class="field"><span>Store / Business Name <b>*</b></span><input id="cust-store-name" name="shopName" autocomplete="organization" required placeholder="ABC Sweets & Snacks" value="' + MH.esc(person.shopName || "") + '"></label>' +
-          '<label class="field"><span>Contact Person <b>*</b></span><input id="cust-name" name="name" autocomplete="name" required placeholder="Owner Name" value="' + MH.esc(person.name || "") + '"></label>' +
+          '<label class="field"><span>Shop Name <b>*</b></span><input id="cust-store-name" name="shopName" autocomplete="organization" required placeholder="ABC Sweets & Snacks" value="' + MH.esc(person.shopName || "") + '"></label>' +
+          '<label class="field"><span>Customer Name <b>*</b></span><input id="cust-name" name="name" autocomplete="name" required placeholder="Your full name" value="' + MH.esc(person.name || "") + '"></label>' +
           '<label class="field"><span>Mobile Number <b>*</b></span>' +
             '<input id="cust-phone" name="phone" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" autocomplete="tel" required placeholder="10-digit mobile number" value="' + MH.esc(String(person.phone || "").replace(/\D/g, "").slice(0, 10)) + '">' +
             '<span class="field-hint" id="phone-hint">Enter your 10-digit mobile number</span></label>' +
@@ -454,9 +533,16 @@
           '<input type="hidden" id="cust-longitude" name="longitude" value="' + MH.esc(person.longitude || "") + '">' +
         '</div>' +
         '<div class="delivery-or"><span>OR</span></div>' +
-        '<label class="field delivery-address-field"><span>✏️ Enter Delivery Address</span>' +
-          '<textarea id="cust-address" name="address" rows="5" autocomplete="street-address" placeholder="Shop Name:&#10;Area/Market:&#10;Road/Landmark:&#10;Town:&#10;PIN Code:">' + MH.esc(savedAddress) + '</textarea>' +
-          '<span class="field-hint">Example: Maa Tara Sweets, Kaliachak Main Market, Near Bus Stand, Malda, 732201</span></label>' +
+        '<div class="address-entry-panel">' +
+          '<div class="address-entry-heading"><span aria-hidden="true">✦</span><div><strong>Enter Delivery Address</strong><small>Add clear directions so we can deliver with confidence.</small></div></div>' +
+          '<div class="address-fields-grid">' +
+            '<label class="field"><span>Area / Market</span><input id="cust-area" name="area" autocomplete="address-level3" placeholder="e.g. Kaliachak Main Market" value="' + MH.esc(addressFields.area) + '"></label>' +
+            '<label class="field"><span>Landmark</span><input id="cust-landmark" name="landmark" autocomplete="off" placeholder="e.g. Near Bus Stand" value="' + MH.esc(addressFields.landmark) + '"></label>' +
+            '<label class="field"><span>Town / City / Village</span><input id="cust-town" name="town" autocomplete="address-level2" placeholder="e.g. Malda" value="' + MH.esc(addressFields.town) + '"></label>' +
+            '<label class="field"><span>PIN Code</span><input id="cust-pin" name="pin" inputmode="numeric" autocomplete="postal-code" maxlength="6" placeholder="e.g. 732201" value="' + MH.esc(addressFields.pin) + '"></label>' +
+          '</div>' +
+          '<p class="address-example">A nearby market and landmark help us find your shop quickly.</p>' +
+        '</div>' +
       '</section>' +
       '<aside class="better-delivery-card"><strong>🚚 Better Delivery</strong><ul>' +
         '<li>Share a map location for faster delivery.</li><li>Address is optional when a location is shared.</li><li>Our delivery team will contact you before dispatch.</li>' +
@@ -464,20 +550,25 @@
       '<div class="order-trust-grid order-form-trust" aria-label="Shop assurances">' +
         '<span>📦 Bulk orders supported</span><span>⚡ Fast confirmation</span>' +
         '<span>🔒 Secure ordering</span><span>💬 WhatsApp updates</span>' +
-      '</div></div>' +
+      '</div></div></div>' +
       '<section class="order-review" id="order-review" aria-live="polite" hidden></section>' +
       '<div class="order-action-bar"><p class="form-error" id="order-error" role="alert"></p>' +
       '<p class="order-share-status" id="order-share-status" role="status" hidden></p>' +
       '<a class="btn secondary order-whatsapp-link" id="order-whatsapp-link" target="_blank" rel="noopener noreferrer" hidden>Open WhatsApp chat to send order</a>' +
-      '<button type="submit" class="btn full wa-btn btn-shimmer" id="send-order">' +
+      '<div class="order-nav-actions"><button type="button" class="checkout-back" id="back-to-cart" data-act="back-to-cart" hidden>← Back to Cart</button></div>' +
+      '<div class="order-sticky-summary" id="order-sticky-summary" aria-live="polite"></div>' +
+      '<button type="button" class="btn full checkout-next" id="continue-to-review" data-act="continue-to-review">Review Order</button>' +
+      '<button type="button" class="btn full checkout-next" id="continue-to-delivery" data-act="continue-to-delivery" hidden>Continue to Delivery Details</button>' +
+      '<button type="submit" class="btn full wa-btn btn-shimmer" id="send-order" hidden>' +
         '<svg class="wa-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
-        '<span id="send-order-label">Review &amp; Send Order on WhatsApp</span>' +
+        '<span id="send-order-label">Continue to Checkout</span>' +
         '<span class="wa-pulse"></span>' +
       '</button></div>' +
       '</form></div>';
 
     document.body.classList.add("lock");
     renderSummary();
+    setOrderStep("cart");
     renderLocationStatus(savedMapLink);
 
     var locBtn = document.getElementById("get-location-btn");
@@ -528,8 +619,6 @@
     if (MH.hasPendingOrder()) {
       var sheet = root.querySelector(".sheet");
       if (sheet) sheet.scrollTop = 0;
-    } else {
-      document.getElementById("cust-store-name").focus();
     }
   }
 
@@ -542,6 +631,67 @@
     root.hidden = true;
     root.innerHTML = "";
     document.body.classList.remove("lock");
+  }
+
+  function setOrderStep(step) {
+    orderStep = step;
+    var cartStep = document.getElementById("order-cart-step");
+    var itemReviewStep = document.getElementById("order-item-review-step");
+    var deliveryStep = document.getElementById("order-delivery-step");
+    var detailsStep = document.getElementById("order-details-step");
+    var finalReviewStep = document.getElementById("order-review");
+    var title = document.getElementById("checkout-step-title");
+    var lead = document.getElementById("checkout-step-lead");
+    var back = document.getElementById("back-to-cart");
+    var reviewNext = document.getElementById("continue-to-review");
+    var deliveryNext = document.getElementById("continue-to-delivery");
+    var send = document.getElementById("send-order");
+    var isCartStep = step === "cart";
+    var isItemReviewStep = step === "review";
+    var isDeliveryStep = step === "delivery";
+    var isFinalCheckout = step === "checkout" || !!orderReview;
+    var isNavCloseStep = isItemReviewStep || isDeliveryStep || isFinalCheckout;
+    if (cartStep) cartStep.hidden = !isCartStep;
+    if (itemReviewStep) itemReviewStep.hidden = !isItemReviewStep;
+    if (deliveryStep) deliveryStep.hidden = !isDeliveryStep;
+    if (detailsStep) detailsStep.hidden = isFinalCheckout;
+    if (finalReviewStep) finalReviewStep.hidden = !isFinalCheckout;
+    if (title) title.textContent = isCartStep
+      ? "Your order"
+      : (isItemReviewStep ? "Review order" : (isDeliveryStep ? "Delivery details" : "Final checkout"));
+    if (lead) lead.textContent = isCartStep
+      ? "Review your items before adding delivery details."
+      : (isItemReviewStep
+        ? "Check your selected products and quantities before entering delivery details."
+        : "Tell us where to deliver your bulk order. Share a location or enter an address.");
+    if (lead) lead.hidden = isFinalCheckout;
+    if (back) back.hidden = isCartStep;
+    if (back) back.textContent = isItemReviewStep
+      ? "← Back to Cart"
+      : (isDeliveryStep ? "← Back to Review" : "← Back to Delivery Details");
+    if (reviewNext) reviewNext.hidden = !isCartStep;
+    if (deliveryNext) deliveryNext.hidden = !isItemReviewStep;
+    if (send) send.hidden = !isDeliveryStep && !isFinalCheckout;
+    var sendLabel = document.getElementById("send-order-label");
+    if (sendLabel) sendLabel.textContent = isFinalCheckout ? "Confirm Bulk Order" : "Continue to Checkout";
+    var stickyLabel = document.querySelector("#order-sticky-summary > div > span");
+    if (stickyLabel) stickyLabel.textContent = isItemReviewStep || isFinalCheckout ? "Items" : "Total items";
+    var sheet = document.querySelector("#order-modal .order-sheet");
+    if (sheet) {
+      sheet.classList.toggle("is-reviewing", isFinalCheckout);
+      sheet.classList.toggle("is-item-review", isItemReviewStep);
+      sheet.classList.toggle("is-delivery-step", isDeliveryStep);
+      sheet.classList.toggle("has-nav-close", isNavCloseStep);
+      var close = sheet.querySelector(".order-close");
+      var navActions = sheet.querySelector(".order-nav-actions");
+      if (close && navActions && isNavCloseStep) {
+        navActions.appendChild(close);
+      } else if (close) {
+        var eyebrow = sheet.querySelector(".order-eyebrow");
+        if (eyebrow) sheet.insertBefore(close, eyebrow);
+      }
+    }
+    if (isItemReviewStep) renderOrderItemReview();
   }
 
   function pulse() {
@@ -570,16 +720,21 @@
 
   function readCustomerFromForm() {
     var mapLink = (document.getElementById("cust-map-link") || {}).value || "";
-    var address = (document.getElementById("cust-address") || {}).value || "";
+    var addressFields = {
+      area: (document.getElementById("cust-area") || {}).value || "",
+      landmark: (document.getElementById("cust-landmark") || {}).value || "",
+      town: (document.getElementById("cust-town") || {}).value || "",
+      pin: (document.getElementById("cust-pin") || {}).value || ""
+    };
     return {
       name: (document.getElementById("cust-name") || {}).value || "",
       phone: ((document.getElementById("cust-phone") || {}).value || "").replace(/\D/g, "").slice(0, 10),
-      address: address.trim(),
+      address: composeDeliveryAddress(addressFields),
       addressMode: mapLink ? "map" : "manual",
       mapLink: mapLink,
       shopName: (document.getElementById("cust-store-name") || {}).value || "",
-      street: "",
-      landmark: "",
+      street: addressFields.area.trim(),
+      landmark: addressFields.landmark.trim(),
       latitude: (document.getElementById("cust-latitude") || {}).value || "",
       longitude: (document.getElementById("cust-longitude") || {}).value || ""
     };
@@ -608,11 +763,11 @@
     var phoneDigits = person.phone.replace(/\D/g, "");
     var addressOk = !!safeMapLink(person.mapLink) || !!person.address.trim();
     if (!person.shopName.trim()) {
-      error.textContent = "Please enter your store or business name.";
+      error.textContent = "Please enter your shop name.";
       return;
     }
     if (!person.name.trim()) {
-      error.textContent = "Please enter the contact person's name.";
+      error.textContent = "Please enter the customer's name.";
       return;
     }
     if (phoneDigits.length !== 10) {
@@ -641,16 +796,14 @@
         time: new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(now),
         customer: Object.assign({}, person),
         items: totals.items.map(function (item) {
-          return { id: item.id, name: item.name, price: item.price, qty: item.qty };
+          return { id: item.id, name: item.name, price: item.price, qty: item.qty, image: item.image };
         }),
         qty: totals.qty,
         amount: totals.amount
       };
       prepareOrderPdf(orderReview);
-      document.getElementById("order-details-step").hidden = true;
-      document.getElementById("order-review").hidden = false;
+      setOrderStep("checkout");
       renderOrderReview(orderReview);
-      document.getElementById("send-order-label").textContent = "Send order to WhatsApp";
       document.querySelector("#order-modal .sheet").scrollTop = 0;
       error.textContent = "";
       return;
@@ -669,15 +822,42 @@
     if (button.dataset.cat) {
       category = button.dataset.cat;
       renderGrid();
+      document.getElementById("catalog").scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     var act = button.dataset.act;
     if (act === "close") closeOrder();
+    else if (act === "continue-to-review") {
+      if (MH.totals().qty) {
+        setOrderStep("review");
+        document.getElementById("order-error").textContent = "";
+        document.querySelector("#order-modal .sheet").scrollTop = 0;
+      }
+    }
+    else if (act === "continue-to-delivery") {
+      if (MH.totals().qty) {
+        setOrderStep("delivery");
+        document.getElementById("order-error").textContent = "";
+        document.querySelector("#order-modal .sheet").scrollTop = 0;
+      }
+    } else if (act === "back-to-cart") {
+      if (orderReview) {
+        orderReview = null;
+        orderShared = false;
+        setShareStatus("", "");
+        setOrderStep("delivery");
+      } else if (orderStep === "delivery") {
+        setOrderStep("review");
+      } else {
+        setOrderStep("cart");
+      }
+      renderSummary();
+      document.getElementById("order-error").textContent = "";
+      document.querySelector("#order-modal .sheet").scrollTop = 0;
+    }
     else if (act === "edit-order") {
       orderReview = null;
-      document.getElementById("order-details-step").hidden = false;
-      document.getElementById("order-review").hidden = true;
-      document.getElementById("send-order-label").textContent = "Review your order";
+      setOrderStep("delivery");
       document.getElementById("order-error").textContent = "";
       setShareStatus("", "");
     }
@@ -693,8 +873,17 @@
       MH.setPendingOrder(false);
       refreshAll();
       if (orderReview) renderOrderReview(orderReview);
-      document.getElementById("send-order-label").textContent = "Send order to WhatsApp";
+      document.getElementById("send-order-label").textContent = "Confirm Bulk Order";
       setShareStatus("Your cart is unchanged. Send the order whenever you are ready.", "");
+    } else if (button.dataset.id && act === "remove" && orderOpen) {
+      var line = button.closest(".cart-line");
+      if (line && !line.classList.contains("is-removing")) {
+        line.classList.add("is-removing");
+        line.querySelectorAll("button").forEach(function (control) { control.disabled = true; });
+        window.setTimeout(function () {
+          if (orderOpen && line.isConnected) changeQty(act, button.dataset.id);
+        }, 180);
+      }
     } else if (button.dataset.id) changeQty(act, button.dataset.id);
   }
 
@@ -728,7 +917,16 @@
     });
     document.addEventListener("error", function (event) {
       var image = event.target;
-      if (!image || image.tagName !== "IMG" || !image.closest(".card-media")) return;
+      if (!image || image.tagName !== "IMG") return;
+      if (image.classList.contains("cart-thumb")) {
+        var fallback = document.createElement("span");
+        fallback.className = "cart-thumb cart-thumb-fallback";
+        fallback.setAttribute("aria-hidden", "true");
+        fallback.textContent = "🍫";
+        image.replaceWith(fallback);
+        return;
+      }
+      if (!image.closest(".card-media")) return;
       var fallback = document.createElement("div");
       fallback.className = "ph";
       fallback.textContent = image.dataset.fallback || "MH";

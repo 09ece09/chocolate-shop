@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>M.H Chocolate Shop — Premium Wholesale Chocolate</title>
   <meta name="description" content="Discover premium chocolates for your store, build your order, and send it directly through WhatsApp. No account or online payment required.">
-  <meta name="theme-color" content="#2D1B14">
+  <meta name="theme-color" content="#2A1810">
   <link rel="preload" as="image" href="assets/images/wholesale-banner.png" fetchpriority="high" media="(min-width: 640px)">
   <link rel="preload" as="image" href="assets/images/hero-poster.png" fetchpriority="high" media="(max-width: 639px)">
 
@@ -18,7 +18,7 @@
   <!-- Premium fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -52,7 +52,7 @@
       <span class="mark" aria-hidden="true">MH</span>
       <span class="brand-text">
         <span class="brand-name" data-shop>M.H Chocolate Shop</span>
-        <span class="brand-tag">Premium Wholesale Chocolate Supplier</span>
+        <span class="brand-tag"><span class="verified-dot" aria-hidden="true">✓</span> Verified premium supplier</span>
       </span>
     </a>
 
@@ -61,6 +61,11 @@
       <input id="search" type="search" placeholder="Search chocolates and treats…" aria-label="Search products" autocomplete="off">
       <button type="button" class="search-clear" id="search-clear" aria-label="Clear search" hidden>×</button>
     </form>
+
+    <div class="header-categories">
+      <span class="header-categories-label">Shop by</span>
+      <div class="cats" id="cats" role="toolbar" aria-label="Browse product categories"></div>
+    </div>
 
     <div class="header-actions">
       <button class="btn ghost view-label" id="view-order" type="button">View Orders</button>
@@ -100,14 +105,33 @@
         <h1 class="hero-heading" id="hero-heading">M.H Chocolate Shop</h1>
         <p class="hero-subheading" lang="bn">আপনার দোকানের জন্য প্রিমিয়াম মানের চকলেট,<br class="desktop-break"> সহজ অর্ডার এবং দ্রুত সরবরাহ।</p>
         <p class="hero-lede" lang="bn">
-          নির্বাচিত প্রিমিয়াম চকলেট সংগ্রহ দেখুন M.H Chocolate Shop-এ।
-          পছন্দের পণ্য কার্টে যোগ করুন এবং সরাসরি WhatsApp-এ অর্ডার পাঠান।
-          কোনো অ্যাকাউন্ট খোলার প্রয়োজন নেই, কোনো অনলাইন পেমেন্টের ঝামেলাও নেই।
+          পছন্দের প্রিমিয়াম চকলেট বেছে নিন, বাল্ক অর্ডার তৈরি করুন এবং সরাসরি WhatsApp-এ পাঠান।
         </p>
         <div class="hero-actions">
-          <button class="btn cta-primary btn-shimmer" id="hero-order" type="button">🟢 Order via WhatsApp</button>
-          <a class="btn cta-secondary" href="#catalog">🍫 Explore Products</a>
+          <a class="btn cta-primary btn-shimmer" href="#catalog">Explore Products <span aria-hidden="true">→</span></a>
+          <button class="btn cta-secondary" id="hero-order" type="button">WhatsApp Order <span aria-hidden="true">↗</span></button>
         </div>
+      </div>
+    </section>
+
+    <section class="trust-ribbon premium-benefits" aria-label="Why shops choose M.H Chocolate Shop">
+      <div class="trust-ribbon-inner">
+        <article class="trust-item">
+          <span class="trust-icon" aria-hidden="true">✦</span>
+          <span class="trust-text"><strong>Wholesale pricing</strong><span>Better value for your store</span></span>
+        </article>
+        <article class="trust-item">
+          <span class="trust-icon" aria-hidden="true">🚚</span>
+          <span class="trust-text"><strong>Fast delivery</strong><span>Reliable doorstep service</span></span>
+        </article>
+        <article class="trust-item">
+          <span class="trust-icon" aria-hidden="true">🍫</span>
+          <span class="trust-text"><strong>Premium quality</strong><span>Carefully selected treats</span></span>
+        </article>
+        <article class="trust-item">
+          <span class="trust-icon" aria-hidden="true">✓</span>
+          <span class="trust-text"><strong>Trusted supplier</strong><span>Here for your business</span></span>
+        </article>
       </div>
     </section>
 
@@ -119,8 +143,12 @@
           <p id="result-count">Loading products…</p>
         </div>
       </div>
-      <div class="cats" id="cats" role="toolbar" aria-label="Browse product categories"></div>
-      <div class="grid" id="grid"></div>
+      <div class="grid" id="grid" aria-live="polite">
+        <article class="skeleton-card" aria-hidden="true"><div class="skeleton-media"></div><div class="skeleton-copy"><i></i><i></i><b></b></div></article>
+        <article class="skeleton-card" aria-hidden="true"><div class="skeleton-media"></div><div class="skeleton-copy"><i></i><i></i><b></b></div></article>
+        <article class="skeleton-card" aria-hidden="true"><div class="skeleton-media"></div><div class="skeleton-copy"><i></i><i></i><b></b></div></article>
+        <article class="skeleton-card" aria-hidden="true"><div class="skeleton-media"></div><div class="skeleton-copy"><i></i><i></i><b></b></div></article>
+      </div>
     </section>
 
     <!-- ─── WHATSAPP CTA SECTION ───────────────── -->
@@ -164,11 +192,12 @@
   </footer>
 
   <!-- Floating Cart Button -->
-  <button class="float-cart" id="float-cart" type="button" aria-label="Open cart and order via WhatsApp">
-    <span class="float-orb" id="float-count">0</span>
-    <span class="float-label">
-      WhatsApp Order
-      <small>Review your cart to continue</small>
+  <button class="float-cart" id="float-cart" type="button" aria-label="Open shopping cart">
+    <span class="float-cart-summary">
+      <span class="float-stat"><small>Cart items</small><strong><span id="float-count">0</span> items</strong></span>
+      <span class="float-stat"><small>Total amount</small><strong id="float-total">₹0</strong></span>
+    </span>
+    <span class="float-cta">Continue order <span aria-hidden="true">→</span>
     </span>
   </button>
 

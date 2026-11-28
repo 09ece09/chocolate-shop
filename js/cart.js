@@ -466,8 +466,8 @@
     if (mapLink) delivery.push("Delivery Location:\nGoogle Maps Link: " + mapLink);
     if (address) delivery.push("Delivery Address:\n" + address);
     return [
-      "Store Name: " + String(person.shopName || "").trim(),
-      "Contact Person: " + String(person.name || "").trim(),
+      "Shop Name: " + String(person.shopName || "").trim(),
+      "Customer Name: " + String(person.name || "").trim(),
       "Phone: " + String(person.phone || "").trim(),
       "",
       delivery.join("\n\n"),
