@@ -172,8 +172,20 @@
   function renderOrderReview(order) {
     var review = document.getElementById("order-review");
     if (!review) return;
+    var close = document.querySelector("#order-modal .order-close");
+    if (close) close.remove();
     var person = order.customer;
     var mapUrl = safeMapLink(person.mapLink);
+    var mapQuery = person.latitude && person.longitude
+      ? String(person.latitude) + "," + String(person.longitude)
+      : "";
+    var mapCoordinates = mapUrl && !mapQuery
+      ? mapUrl.replace(/%2C/ig, ",").match(/(?:@|[?&](?:q|query)=)(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i)
+      : null;
+    if (mapCoordinates) mapQuery = mapCoordinates[1] + "," + mapCoordinates[2];
+    var mapPreviewUrl = mapUrl
+      ? "https://maps.google.com/maps?q=" + encodeURIComponent(mapQuery) + "&z=15&output=embed"
+      : "";
     var sharedPrompt = orderShared
       ? '<div class="order-confirm" role="region" aria-label="Confirm WhatsApp order">' +
         '<p class="order-confirm-title">Did you send this order on WhatsApp?</p>' +
@@ -188,12 +200,22 @@
       return '<span>' + MH.esc(line) + '</span>';
     }).join("");
 
-    review.innerHTML = sharedPrompt +
-      '<header class="review-invoice-header">' +
-        '<div class="review-invoice-brand"><span aria-hidden="true">🏪</span><strong>' + MH.esc(MH.settings().shopName) + '</strong></div>' +
-        '<strong class="review-order-id">#' + MH.esc(order.orderId) + '</strong>' +
-        '<p>' + MH.esc(order.date) + ' <span aria-hidden="true">·</span> ' + MH.esc(order.time) + '</p>' +
+    review.innerHTML =
+      '<header class="final-checkout-header">' +
+        '<div><button type="button" class="final-checkout-back" data-act="back-to-review">← Review Order</button>' +
+          '<p>Verify products before placing order</p></div>' +
       '</header>' +
+      '<section class="final-order-items" aria-label="Ordered products">' +
+        '<div class="final-section-heading"><h3>Ordered items</h3><span>' + order.qty + (order.qty === 1 ? " item" : " items") + '</span></div>' +
+        '<div class="review-items final-review-items">' + orderItemMarkup(order.items) + '</div>' +
+      '</section>' +
+      '<section class="final-order-summary" aria-label="Order summary">' +
+        '<h3>Order Summary</h3>' +
+        '<div><span>Items Total</span><strong>' + MH.esc(MH.money(order.amount)) + '</strong></div>' +
+        '<div><span>Delivery</span><strong class="final-delivery-free">Free</strong></div>' +
+        '<div class="final-summary-total"><span>Total</span><strong>' + MH.esc(MH.money(order.amount)) + '</strong></div>' +
+      '</section>' +
+      sharedPrompt +
       '<section class="review-contact-card" aria-label="Customer contact details">' +
         '<div><span>👤 Customer</span><strong>' + MH.esc(person.name) + '</strong></div>' +
         '<div><span>📞 Phone</span><strong>' + MH.esc(person.phone) + '</strong></div>' +
@@ -202,17 +224,30 @@
         '<div class="review-location-heading"><strong><span aria-hidden="true">📍</span> Delivery location</strong>' +
           '<span class="review-location-badge ' + (mapUrl ? "is-verified" : "") + '">' +
             (mapUrl ? "● Location verified" : "Address provided") + '</span></div>' +
-        '<p class="review-location-address"><span aria-hidden="true">🏠</span><span>' +
-          (addressLines || '<span>Delivery address not provided</span>') + '</span></p>' +
-        (mapUrl ? '<a class="review-location-view" href="' + MH.esc(mapUrl) + '" target="_blank" rel="noopener noreferrer">View location <span aria-hidden="true">↗</span></a>' : '') +
+        '<div class="review-location-layout' + (mapPreviewUrl ? " has-map" : "") + '"><div class="review-location-copy">' +
+          '<p class="review-location-address"><span aria-hidden="true">🏠</span><span>' +
+            (addressLines || '<span>Delivery address not provided</span>') + '</span></p>' +
+          (mapUrl ? '<a class="review-location-view" href="' + MH.esc(mapUrl) + '" target="_blank" rel="noopener noreferrer">View on Google Maps <span aria-hidden="true">↗</span></a>' : '') +
+        '</div>' +
+        (mapPreviewUrl
+          ? '<div class="review-map-preview"><iframe title="Shared delivery location map" src="' + MH.esc(mapPreviewUrl) + '" loading="lazy" referrerpolicy="no-referrer"></iframe></div>'
+          : '') + '</div>' +
       '</section>' +
+      '<section class="review-invoice-header final-order-meta" aria-label="Order details">' +
+        '<div class="final-order-meta-line">' +
+          '<div class="review-invoice-brand"><span aria-hidden="true">🏪</span><strong>' + MH.esc(MH.settings().shopName) + '</strong></div>' +
+          '<strong class="review-order-id">#' + MH.esc(order.orderId) + '</strong>' +
+        '</div>' +
+        '<div class="final-order-datetime"><span>' + MH.esc(order.date) + '</span><span>' + MH.esc(order.time) + '</span></div>' +
+      '</section>' +
+      '<div class="final-secondary-actions">' +
         (orderPdfUrl
-          ? '<div class="order-pdf-actions">' +
-            '<a id="view-order-pdf" class="btn secondary" href="' + MH.esc(orderPdfUrl) + '" target="_blank" rel="noopener noreferrer">View PDF</a>' +
-            '<a id="download-order-pdf" class="btn secondary" href="' + MH.esc(orderPdfUrl) + '" download="' + MH.esc(order.orderId) + '.pdf">Download PDF</a>' +
-            '</div>'
-          : '<p class="order-pdf-error" role="status">' + MH.esc(orderPdfError || "PDF preview is unavailable. You can still send the order on WhatsApp.") + '</p>') +
-      '<button class="btn secondary order-edit-btn" type="button" data-act="edit-order">Edit details</button>';
+          ? '<a id="download-order-pdf" class="final-invoice-link" href="' + MH.esc(orderPdfUrl) + '" download="' + MH.esc(order.orderId) + '.pdf">📄 Download Invoice PDF</a>'
+          : '<p class="order-pdf-error" role="status">' + MH.esc(orderPdfError || "Invoice PDF is unavailable.") + '</p>') +
+        '<button class="order-edit-btn" type="button" data-act="edit-order">Edit delivery details</button>' +
+      '</div>';
+    var header = review.querySelector(".final-checkout-header");
+    if (close && header) header.appendChild(close);
   }
 
   function orderItemMarkup(items) {
@@ -222,8 +257,10 @@
         ? '<img class="cart-thumb" src="' + MH.esc(src) + '" alt="' + MH.esc(item.name) + '" loading="lazy" decoding="async">'
         : '<span class="cart-thumb cart-thumb-fallback" aria-hidden="true">🍫</span>';
       return '<article class="cart-line review-order-item">' + image +
-        '<div class="cart-line-content"><div class="cart-item-copy"><b>' + MH.esc(item.name) + '</b></div>' +
-        '<div class="review-item-details"><span>Qty ' + item.qty + ' × ' + MH.esc(MH.money(item.price)) + '</span>' +
+        '<div class="cart-line-content"><div class="cart-item-copy"><b>' + MH.esc(item.name) + '</b>' +
+        (item.variant ? '<span class="review-item-variant">' + MH.esc(item.variant) + '</span>' +
+          '<span class="checkout-unit-price">' + MH.esc(MH.money(item.price)) + ' × ' + item.qty + '</span>' : '') + '</div>' +
+        '<div class="review-item-details"><span>Qty: ' + item.qty + '</span>' +
         '<strong>' + MH.esc(MH.money(item.qty * item.price)) + '</strong></div></div></article>';
     }).join("");
   }
@@ -665,7 +702,7 @@
         ? "Check your selected products and quantities before entering delivery details."
         : "Tell us where to deliver your bulk order. Share a location or enter an address.");
     if (lead) lead.hidden = isFinalCheckout;
-    if (back) back.hidden = isCartStep;
+    if (back) back.hidden = isCartStep || isFinalCheckout;
     if (back) back.textContent = isItemReviewStep
       ? "← Back to Cart"
       : (isDeliveryStep ? "← Back to Review" : "← Back to Delivery Details");
@@ -796,7 +833,15 @@
         time: new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(now),
         customer: Object.assign({}, person),
         items: totals.items.map(function (item) {
-          return { id: item.id, name: item.name, price: item.price, qty: item.qty, image: item.image };
+          var product = MH.products().filter(function (candidate) { return candidate.id === item.id; })[0];
+          return {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            qty: item.qty,
+            image: item.image,
+            variant: product ? (product.description || product.category) : ""
+          };
         }),
         qty: totals.qty,
         amount: totals.amount
@@ -840,6 +885,14 @@
         document.getElementById("order-error").textContent = "";
         document.querySelector("#order-modal .sheet").scrollTop = 0;
       }
+    } else if (act === "back-to-review") {
+      orderReview = null;
+      orderShared = false;
+      setShareStatus("", "");
+      setOrderStep("review");
+      renderSummary();
+      document.getElementById("order-error").textContent = "";
+      document.querySelector("#order-modal .sheet").scrollTop = 0;
     } else if (act === "back-to-cart") {
       if (orderReview) {
         orderReview = null;
